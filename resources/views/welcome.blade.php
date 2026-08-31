@@ -8,15 +8,24 @@
         integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 
-    <title>Hello, World</title>
+    <title>{{ $settings['site_name'] }}</title>
+
+    @php
+        // Convert the hero overlay hex color into rgb components for use with the configurable opacity.
+        $overlayHex = ltrim($settings['hero_overlay_color'], '#');
+        if (strlen($overlayHex) === 3) {
+            $overlayHex = preg_replace('/(.)/', '$1$1', $overlayHex);
+        }
+        [$overlayR, $overlayG, $overlayB] = array_map('hexdec', str_split($overlayHex, 2));
+    @endphp
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;700&display=swap');
 
         :root {
-            --primary: #0d6efd;
-            --dark: #21252f;
-            --body: #888;
+            --primary: {{ $settings['primary_color'] }};
+            --dark: {{ $settings['dark_color'] }};
+            --body: {{ $settings['body_color'] }};
             --box-shadow: 0 8px 22px rgba(0, 0, 0, 0.1);
         }
 
@@ -43,16 +52,19 @@
 
         .navbar {
             box-shadow: var(--box-shadow);
-            background-color: #0A1E38 !important;
+            background-color: {{ $settings['navbar_bg'] }} !important;
+            min-height: 64px;
         }
 
         .navbar .nav-link {
-            color: #fff;
+            color: {{ $settings['nav_link_color'] }};
+            font-size: 14px;
+            font-weight: 700;
         }
 
         .navbar .nav-link:hover,
         .navbar .nav-link:focus {
-            color: #d1d5db;
+            opacity: 0.75;
         }
 
         .navbar-toggler-icon {
@@ -61,17 +73,12 @@
 
         .logo {
             display: block;
-            width: 200px;
-            height: 100px;
-            background-image: url({{ asset('asset/images/inspaya-image.png') }});
+            width: 130px;
+            height: 48px;
+            background-image: url({{ asset($settings['logo_image']) }});
             background-position: center;
             background-repeat: no-repeat;
             background-size: contain;
-        }
-
-        .navbar .nav-link {
-            font-size: 14px;
-            font-weight: 700;
         }
 
         .btn {
@@ -80,8 +87,14 @@
             border-radius: 5px;
         }
 
+        .btn-brand {
+            background: {{ $settings['btn_bg'] }};
+            border: 1.5px solid {{ $settings['btn_border'] }};
+            color: {{ $settings['btn_border'] }};
+        }
+
         .hero {
-            background-image: url({{ asset('asset/images/lady-consultant.png') }});
+            background-image: url({{ asset($settings['hero_bg_image']) }});
             background-position: top center;
             background-size: cover;
             background-attachment: fixed;
@@ -96,7 +109,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            background-color: rgba(21, 20, 51, 0.8);
+            background-color: rgba({{ $overlayR }}, {{ $overlayG }}, {{ $overlayB }}, {{ $settings['hero_overlay_opacity'] }});
             z-index: -1;
         }
 
@@ -165,11 +178,18 @@
         }
 
         .col-img {
-            background-image: url({{ asset('asset/images/me.jpg') }});
+            background-image: url({{ asset($settings['feature_bg_image']) }});
             background-position: center;
-            background-size: cover;
+            background-repeat: no-repeat;
+            background-size: contain;
             min-height: 700px;
             min-width: 600px;
+        }
+
+        .feature .iconbox {
+            width: 44px;
+            height: 44px;
+            font-size: 22px;
         }
 
         .project {
@@ -183,7 +203,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(21, 20, 51, 0.8);
+            background-color: rgba({{ $overlayR }}, {{ $overlayG }}, {{ $overlayB }}, {{ $settings['hero_overlay_opacity'] }});
             padding: 30px;
             display: flex;
             align-items: flex-end;
@@ -258,15 +278,14 @@
 
         .footer-top {
             padding: 90px;
-            background-color: var(--dark);
+            background-color: {{ $settings['footer_bg'] }};
         }
 
-        /* Footer logo — CSS background-image */
         .footer-logo {
             display: block;
             width: 160px;
             height: 60px;
-            background-image: url({{ asset('asset/images/logo.png') }});
+            background-image: url({{ asset($settings['footer_logo_image']) }});
             background-position: left center;
             background-repeat: no-repeat;
             background-size: contain;
@@ -281,16 +300,16 @@
         }
 
         .footer-bottom {
-            background-color: #242938;
+            background-color: {{ $settings['footer_bottom_bg'] }};
         }
     </style>
 </head>
 
 <body>
     <!--NAVBAR-->
-    <nav class="navbar navbar-expand-lg py-3 sticky-top navbar-light bg-white">
+    <nav class="navbar navbar-expand-lg py-1 sticky-top navbar-light bg-white">
         <div class="container">
-            <a class="navbar-brand logo" href="#" aria-label="Inspaya"></a>
+            <a class="navbar-brand logo" href="#" aria-label="{{ $settings['site_name'] }}"></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -306,11 +325,17 @@
                     <li class="nav-item"><a class="nav-link" href="#blog">Blog</a></li>
                     <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
                 </ul>
-                <button class="btn btn-primary ms-lg-3 me-2">Join Us</button>
+                <button class="btn btn-brand ms-lg-3 me-2" style="width:6rem; height:34px; padding:4px; font-size:13px;">
+                    Join Us
+                </button>
 
                 <form class="d-flex" role="search">
-                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                    <button class="btn btn-outline-success" type="submit">Search</button>
+                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"
+                        style="background:#DADDE1; border:1px solid {{ $settings['btn_border'] }}; height:34px;">
+                    <button class="btn btn-outline-success" type="submit"
+                        style="border:1px solid {{ $settings['btn_border'] }}; color:{{ $settings['btn_border'] }}; height:34px; padding:4px 12px; font-size:13px;">
+                        Search
+                    </button>
                 </form>
             </div>
         </div>
@@ -322,14 +347,12 @@
         <div class="container">
             <div class="row">
                 <div class="col-lg-7 mx-auto text-center">
-                    <h1 class="display-4 text-white">Multidisciplinary Corporate & Advisory Consulting</h1>
-                    <p class="text-white my-3">
-                       InspAya Consult provides integrated advisory services across organizational governance, 
-                       human resource management, financial analysis, energy policy, engineering, digital systems, 
-                       and corporate law — delivering informed, practical solutions for complex business challenges.
-                    </p>
-                    <a href="#" class="btn me-2 btn-primary">Get Started</a>
-                    <a href="#" class="btn btn-outline-light">My Portfolio</a>
+                    <h1 class="display-4 text-white">{{ $settings['hero_heading'] }}</h1>
+                    <p class="text-white my-3">{{ $settings['hero_text'] }}</p>
+                    <a href="#" class="btn btn-brand me-2">{{ $settings['hero_btn1_text'] }}</a>
+                    <a href="#" class="btn btn-outline-light" style="border:2px solid {{ $settings['dark_color'] }};">
+                        {{ $settings['hero_btn2_text'] }}
+                    </a>
                 </div>
             </div>
         </div>
@@ -342,87 +365,20 @@
             <div class="row mb-5">
                 <div class="col-md-8 mx-auto text-center">
                     <h6 class="text-primary">SERVICES</h6>
-                    <h1>Engagement Models Built Around Your Business</h1>
-                    <p>
-                        Every organization's requirements are different. 
-                        We work closely with you to scope the right engagement 
-                        — from a focused advisory consultation to a comprehensive, 
-                        long-term partnership — with clear, transparent terms.
-                    </p>
+                    <h1>{{ $settings['services_heading'] }}</h1>
+                    <p>{{ $settings['services_subheading'] }}</p>
                 </div>
             </div>
             <div class="row g-4">
-                <div class="col-lg-4 col-sm-6">
-                    <div class="service card-effect">
-                        <div class="iconbox"><i class="bx bxs-comment-detail"></i></div>
-                        <h5 class="mt-4 mb-2">Organizational Governance and Strategy</h5>
-                        <p>
-                           Advisory support for corporate structure, strategic planning, 
-                           and governance frameworks that drive sustainable performance.
-                        </p>
+                @foreach ($services as $service)
+                    <div class="col-lg-4 col-sm-6">
+                        <div class="service card-effect">
+                            <div class="iconbox"><i class="{{ $service->icon }}"></i></div>
+                            <h5 class="mt-4 mb-2">{{ $service->title }}</h5>
+                            <p>{{ $service->description }}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="col-lg-4 col-sm-6">
-                    <div class="service card-effect">
-                        <div class="iconbox"><i class="bx bxs-cog"></i></div>
-                        <h5 class="mt-4 mb-2">Human Resource Management and Development</h5>
-                        <p>
-                            Comprehensive HR solutions covering talent strategy, workforce 
-                            development, and organizational capability building.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6">
-                    <div class="service card-effect">
-                        <div class="iconbox"><i class="bx bxs-heart"></i></div>
-                        <h5 class="mt-4 mb-2">Financial Analytics and Forensic Audits</h5>
-                        <p>
-                            Data-driven financial analysis and forensic audit services to 
-                            strengthen transparency, compliance, and decision-making.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6">
-                    <div class="service card-effect">
-                        <div class="iconbox"><i class="bx bxs-check-shield"></i></div>
-                        <h5 class="mt-4 mb-2">Energy Policy Evaluations and Formulation</h5>
-                        <p>
-                            Expert guidance on energy policy development, evaluation, and 
-                            regulatory alignment for public and private sector clients.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6">
-                    <div class="service card-effect">
-                        <div class="iconbox"><i class="bx bxs-color"></i></div>
-                        <h5 class="mt-4 mb-2">Engineering Design and Planning</h5>
-                        <p>
-                            Technical consulting spanning engineering design, 
-                            feasibility studies, and infrastructure planning.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6">
-                    <div class="service card-effect">
-                        <div class="iconbox"><i class="bx bxs-hand"></i></div>
-                        <h5 class="mt-4 mb-2">Digital Systems Design and Management</h5>
-                        <p>
-                            Strategic and technical support for digital transformation, 
-                            systems architecture, and technology management.
-                        </p>
-                    </div>
-                </div>
-                 
-                <div class="col-lg-4 col-sm-6">
-                    <div class="service card-effect">
-                        <div class="iconbox"><i class="bx bxs-hand"></i></div>
-                        <h5 class="mt-4 mb-2">Corporate Legal Consultations</h5>
-                        <p>
-                            Practical legal advisory services covering corporate 
-                            compliance, contracts, and risk management.
-                        </p>
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
     </section>
@@ -436,49 +392,18 @@
                 <div class="row">
                     <div class="col-md-10 offset-md-1">
                         <h3 class="text-primary">Why choose us?</h3>
-                        <h1>A Trusted Partner for Complex Business Challenges</h1>
-                        <p>
-                            InspAya Consult brings together multidisciplinary 
-                            expertise and a practical, results-driven approach 
-                            — helping organizations make informed decisions with 
-                            confidence.
-                        </p>
+                        <h1>{{ $settings['feature_heading'] }}</h1>
+                        <p>{{ $settings['feature_subheading'] }}</p>
 
-                        <div class="feature d-flex mt-5">
-                            <div class="iconbox me-3"><i class="bx bxs-hand"></i></div>
-                            <div>
-                                <h5>Multidisciplinary Expertise</h5>
-                                <p>
-                                    Our consultants bring specialized knowledge across 
-                                    governance, finance, energy, engineering, digital systems, 
-                                    and law, offering integrated solutions under one roof.
-                                </p>
+                        @foreach ($features as $index => $item)
+                            <div class="feature d-flex {{ $index === 0 ? 'mt-5' : 'mt-4' }}">
+                                <div class="iconbox me-3"><i class="{{ $item->icon }}"></i></div>
+                                <div>
+                                    <h5>{{ $item->title }}</h5>
+                                    <p>{{ $item->description }}</p>
+                                </div>
                             </div>
-                        </div>
-
-                        <div class="feature d-flex mt-4">
-                            <div class="iconbox me-3"><i class="bx bxs-hand"></i></div>
-                            <div>
-                                <h5>Tailored Advisory Approach</h5>
-                                <p>
-                                    We take the time to understand each client's context, 
-                                    delivering recommendations that are practical, relevant, 
-                                    and built around your specific goals.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="feature d-flex mt-4">
-                            <div class="iconbox me-3"><i class="bx bxs-hand"></i></div>
-                            <div>
-                                <h5>Proven Track Record</h5>
-                                <p>
-                                    Our team draws on years of hands-on experience guiding 
-                                    organizations through complex regulatory, financial, and 
-                                    operational challenges.
-                                </p>
-                            </div>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -492,28 +417,20 @@
             <div class="row mb-5">
                 <div class="col-md-8 mx-auto text-center">
                     <h6 class="text-primary">CASE STUDIES</h6>
-                    <h1>Engagements That Deliver Results</h1>
-                    <p>
-                        A look at how we've partnered with organizations
-                         across governance, finance, energy, engineering, 
-                         and beyond to solve complex challenges and drive 
-                         measurable outcomes.
-                    </p>
+                    <h1>{{ $settings['portfolio_heading'] }}</h1>
+                    <p>{{ $settings['portfolio_subheading'] }}</p>
                 </div>
             </div>
 
             <div class="row g-3">
-                @php
-                    $projects = ['poly.jpg', 'yo.jpg', 'yeppp.jpg', 'wassop.jpg', 'u.jpg', 'yo.jpg'];
-                @endphp
-                @foreach ($projects as $projectImage)
+                @foreach ($projects as $project)
                     <div class="col-lg-4 col-sm-6">
                         <div class="project">
-                            <img src="{{ asset('asset/images/' . $projectImage) }}" alt="">
+                            <img src="{{ asset($project->image) }}" alt="{{ $project->title }}">
                             <div class="overlay">
                                 <div>
-                                    <h4 class="text-white">Project Title</h4>
-                                    <h6 class="text-white">Website Design</h6>
+                                    <h4 class="text-white">{{ $project->title }}</h4>
+                                    <h6 class="text-white">{{ $project->subtitle }}</h6>
                                 </div>
                             </div>
                         </div>
@@ -530,30 +447,26 @@
             <div class="row mb-5">
                 <div class="col-md-8 mx-auto text-center">
                     <h6 class="text-primary">PRICING</h6>
-                    <h1>Our Fair &amp; Simple Pricing</h1>
-                    <p>Lorem ipsum dolor sit amet consectetur nisi necessitatibus
-                        repellat distinctio eveniet eaque fuga in cumque optio consectetur
-                        harum vitae debitis sapiente praesentium aperiam aut</p>
+                    <h1>{{ $settings['pricing_heading'] }}</h1>
+                    <p>{{ $settings['pricing_subheading'] }}</p>
                 </div>
             </div>
             <div class="row g-4">
-                @for ($i = 0; $i < 4; $i++)
+                @foreach ($pricingPlans as $plan)
                     <div class="col-lg-3 col-sm-6">
                         <div class="pricing card-effect text-center">
-                            <h6>STARTER</h6>
-                            <h1>$999</h1>
+                            <h6>{{ $plan->name }}</h6>
+                            <h1>{{ $plan->price }}</h1>
                             <hr>
                             <ul class="list-unstyled mb-4">
-                                <li><i class="bx bxs-check-circle"></i> Premium support</li>
-                                <li><i class="bx bxs-check-circle"></i> 30+ Webmaster Tools</li>
-                                <li><i class="bx bxs-check-circle"></i> Drag &amp; Drop Builder</li>
-                                <li><i class="bx bxs-check-circle"></i> eCommerce Store</li>
-                                <li><i class="bx bxs-check-circle"></i> Wordpress plugins</li>
+                                @foreach ($plan->features ?? [] as $feature)
+                                    <li><i class="bx bxs-check-circle"></i> {{ $feature }}</li>
+                                @endforeach
                             </ul>
-                            <button class="btn btn-primary">Get Started</button>
+                            <button class="btn btn-brand">Get Started</button>
                         </div>
                     </div>
-                @endfor
+                @endforeach
             </div>
         </div>
     </section>
@@ -564,30 +477,22 @@
         <div class="container-fluid">
             <div class="row mb-4">
                 <div class="col-md-8 mx-auto text-center">
-                    <h6 class="text-primary"> OUR TEAM</h6>
-                    <h1>Meet Our Consultants</h1>
-                    <p>
-                        A multidisciplinary team of experienced 
-                        advisors bringing deep expertise in governance, 
-                        finance, energy, engineering, digital systems, and 
-                        law to every engagement.
-                    </p>
+                    <h6 class="text-primary">OUR TEAM</h6>
+                    <h1>{{ $settings['team_heading'] }}</h1>
+                    <p>{{ $settings['team_subheading'] }}</p>
                 </div>
             </div>
             <div class="row text-center g-4">
-                @php
-                    $teamImages = ['mama.jpg', 'poly.jpg', 'me.jpg', 'beauty.jpg'];
-                @endphp
-                @foreach ($teamImages as $teamImage)
+                @foreach ($team as $member)
                     <div class="col-lg-3 col-sm-6">
                         <div class="team-members card-effect">
-                            <img src="{{ asset('asset/images/' . $teamImage) }}" alt="">
-                            <h5 class="mb-0 mt-4">Hajia Amish</h5>
-                            <p>Web Developer</p>
+                            <img src="{{ asset($member->image) }}" alt="{{ $member->name }}">
+                            <h5 class="mb-0 mt-4">{{ $member->name }}</h5>
+                            <p>{{ $member->role }}</p>
                             <div class="social-icon">
-                                <a href="#"><i class="bx bxl-facebook"></i></a>
-                                <a href="#"><i class="bx bxl-twitter"></i></a>
-                                <a href="#"><i class="bx bxl-instagram-alt"></i></a>
+                                <a href="{{ $member->facebook ?: '#' }}"><i class="bx bxl-facebook"></i></a>
+                                <a href="{{ $member->twitter ?: '#' }}"><i class="bx bxl-twitter"></i></a>
+                                <a href="{{ $member->instagram ?: '#' }}"><i class="bx bxl-instagram-alt"></i></a>
                             </div>
                         </div>
                     </div>
@@ -597,34 +502,23 @@
     </section>
     <!--//TEAM-->
 
-    <!--BLOG-->
+    <!--Insight-->
     <section id="blog" class="bg-light">
         <div class="container">
             <div class="row mb-5">
                 <div class="col-md-8 mx-auto text-center">
                     <h6 class="text-primary">INSIGHT</h6>
-                    <h1>Latest Insights and Updates</h1>
-                    <p>
-                       Perspectives from our consultants on governance, 
-                       finance, energy, engineering, digital transformation, 
-                       and corporate law — helping you stay ahead in a changing business 
-                       landscape.
-                    </p>
+                    <h1>{{ $settings['blog_heading'] }}</h1>
+                    <p>{{ $settings['blog_subheading'] }}</p>
                 </div>
             </div>
             <div class="row g-4">
-                @php
-                    $blogImages = ['Hajia4.jpg', 'Hajia2.jpg', 'hajia3.jpg'];
-                @endphp
-                @foreach ($blogImages as $blogImage)
+                @foreach ($blogPosts as $post)
                     <div class="col-md-4">
                         <div class="blog-post card-effect">
-                            <img src="{{ asset('asset/images/' . $blogImage) }}" alt="">
-                            <h5 class="mt-4"><a href="#">Navigating Regulatory Change in Energy Policy</a></h5>
-                            <p>
-                                A look at how organizations can stay ahead of shifting energy regulations while 
-                                maintaining operational efficiency and compliance.
-                            </p>
+                            <img src="{{ asset($post->image) }}" alt="{{ $post->title }}">
+                            <h5 class="mt-4"><a href="#">{{ $post->title }}</a></h5>
+                            <p>{{ $post->excerpt }}</p>
                         </div>
                     </div>
                 @endforeach
@@ -639,11 +533,8 @@
             <div class="row mb-5">
                 <div class="col-md-8 mx-auto text-center">
                     <h6 class="text-primary">CONTACT</h6>
-                    <h1>Get In Touch</h1>
-                    <p>
-                        Have a question or ready to discuss your organization's needs? 
-                        Reach out to our team, and we'll respond promptly to arrange a consultation.
-                    </p>
+                    <h1>{{ $settings['contact_heading'] }}</h1>
+                    <p>{{ $settings['contact_subheading'] }}</p>
                 </div>
             </div>
 
@@ -691,7 +582,7 @@
             <div class="container">
                 <div class="row gy-4">
                     <div class="col-md-4">
-                        <a href="#" class="footer-logo" aria-label="Inspaya"></a>
+                        <a href="#" class="footer-logo" aria-label="{{ $settings['site_name'] }}"></a>
                     </div>
                     <div class="col-md-2">
                         <h5 class="text-white">Brand</h5>
@@ -714,9 +605,9 @@
                     <div class="col-md-4">
                         <h5 class="text-white">Contact</h5>
                         <ul class="list-unstyled">
-                            <li>Address: 2715 Ash Dr. San Jose, South Dakota 83475</li>
-                            <li>Email: mohammedamina8678@gmail.com</li>
-                            <li>Phone: 059 953 8678</li>
+                            <li>Address: {{ $settings['footer_address'] }}</li>
+                            <li>Email: {{ $settings['footer_email'] }}</li>
+                            <li>Phone: {{ $settings['footer_phone'] }}</li>
                         </ul>
                     </div>
                 </div>
