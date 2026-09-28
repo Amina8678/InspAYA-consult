@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\TagController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -174,6 +175,15 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::put('/enquiries/{submission}/notes/{note}', [ContactSubmissionNoteController::class, 'update'])->middleware('permission:enquiries.respond')->name('enquiries.notes.update');
     Route::get('/enquiries/{submission}/notes/{note}/delete', [ContactSubmissionNoteController::class, 'confirmDelete'])->middleware('permission:enquiries.delete|enquiries.respond')->name('enquiries.notes.delete');
     Route::delete('/enquiries/{submission}/notes/{note}', [ContactSubmissionNoteController::class, 'destroy'])->middleware('permission:enquiries.delete|enquiries.respond')->name('enquiries.notes.destroy');
+
+    // CMS users (FR-ADM-11). No delete route: UserPolicy::delete() always
+    // refuses, so deactivation (via update, plan §6 rows 1-6) is the only
+    // removal path (D6).
+    Route::get('/users', [UserController::class, 'index'])->middleware('permission:users.view')->name('users.index');
+    Route::get('/users/create', [UserController::class, 'create'])->middleware('permission:users.create')->name('users.create');
+    Route::post('/users', [UserController::class, 'store'])->middleware('permission:users.create')->name('users.store');
+    Route::get('/users/{user}/edit', [UserController::class, 'edit'])->middleware('permission:users.update')->name('users.edit');
+    Route::put('/users/{user}', [UserController::class, 'update'])->middleware('permission:users.update')->name('users.update');
 
     // Site settings (FR-ADM-13).
     Route::get('/settings', [SiteSettingsController::class, 'edit'])->middleware('permission:settings.manage')->name('settings.edit');

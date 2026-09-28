@@ -21,6 +21,7 @@
         ['label' => 'Categories', 'route' => 'admin.categories.index', 'match' => 'admin.categories.*', 'show' => $user->can('viewAny', App\Models\Category::class)],
         ['label' => 'Tags', 'route' => 'admin.tags.index', 'match' => 'admin.tags.*', 'show' => $user->can('viewAny', App\Models\Tag::class)],
         ['label' => 'Enquiries'.($newEnquiries > 0 ? " ({$newEnquiries} new)" : ''), 'route' => 'admin.enquiries.index', 'match' => 'admin.enquiries.*', 'show' => $canViewEnquiries],
+        ['label' => 'Users', 'route' => 'admin.users.index', 'match' => 'admin.users.*', 'show' => $user->can('viewAny', App\Models\User::class)],
         ['label' => 'Site settings', 'route' => 'admin.settings.edit', 'match' => 'admin.settings.*', 'show' => $user->can('settings.manage')],
     ], fn (array $item) => $item['show']));
 @endphp

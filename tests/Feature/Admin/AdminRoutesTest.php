@@ -133,6 +133,11 @@ class AdminRoutesTest extends TestCase
             'enquiry note update' => ['PUT', '/admin/enquiries/:submission/notes/:note', [], ['super-admin', 'administrator', 'editor', 'author', self::NONE], 302],
             'enquiry note delete confirm' => ['GET', '/admin/enquiries/:submission/notes/:note/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'enquiry note destroy' => ['DELETE', '/admin/enquiries/:submission/notes/:note', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'users list' => ['GET', '/admin/users', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'user create page' => ['GET', '/admin/users/create', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'user store' => ['POST', '/admin/users', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'user edit' => ['GET', '/admin/users/:user/edit', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'user update' => ['PUT', '/admin/users/:user', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
         ];
     }
 
@@ -140,6 +145,7 @@ class AdminRoutesTest extends TestCase
     private const PLACEHOLDERS = [
         ':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}', ':page' => '{page}',
         ':post' => '{post}', ':category' => '{category}', ':tag' => '{tag}', ':submission' => '{submission}', ':note' => '{note}',
+        ':user' => '{user}',
     ];
 
     private function hit(string $method, string $path)
@@ -155,6 +161,9 @@ class AdminRoutesTest extends TestCase
         $tag = Tag::factory()->create();
         $submission = ContactSubmission::factory()->create();
         $note = ContactSubmissionNote::factory()->for($submission, 'submission')->create();
+        // Not a Super Admin, so any allowed role here (super-admin,
+        // administrator) generically passes the target-acting-on checks.
+        $targetUser = User::factory()->create();
 
         // Invalid/empty payloads: the point is authorization, not success.
         $uri = strtr($path, [
@@ -163,6 +172,7 @@ class AdminRoutesTest extends TestCase
             ':page' => (string) $page->id, ':post' => (string) $post->id,
             ':category' => (string) $category->id, ':tag' => (string) $tag->id,
             ':submission' => (string) $submission->id, ':note' => (string) $note->id,
+            ':user' => (string) $targetUser->id,
         ]);
 
         return $this->from('/admin')->call($method, $uri, ['alt_text' => 'x']);
