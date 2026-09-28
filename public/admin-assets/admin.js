@@ -30,6 +30,34 @@
     });
   }
 
+  // Media picker: refresh the preview when a different image is chosen.
+  document.querySelectorAll('select[data-media-preview]').forEach(function (select) {
+    var preview = document.getElementById(select.getAttribute('data-media-preview'));
+    if (!preview) {
+      return;
+    }
+
+    select.addEventListener('change', function () {
+      var option = select.options[select.selectedIndex];
+      var url = option && option.getAttribute('data-url');
+      preview.textContent = '';
+
+      if (url) {
+        var img = document.createElement('img');
+        img.src = url;
+        img.alt = 'Preview: ' + (option.getAttribute('data-alt') || 'selected image');
+        img.width = 160;
+        img.height = 90;
+        preview.appendChild(img);
+      } else {
+        var p = document.createElement('p');
+        p.className = 'muted small';
+        p.textContent = 'No image selected.';
+        preview.appendChild(p);
+      }
+    });
+  });
+
   var summary = document.getElementById('error-summary');
   if (summary) {
     summary.focus();
