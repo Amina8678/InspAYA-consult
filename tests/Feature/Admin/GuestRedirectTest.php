@@ -20,7 +20,7 @@ class GuestRedirectTest extends TestCase
 
     public function test_guest_visiting_a_nested_admin_route_is_redirected_to_admin_login(): void
     {
-        $this->get('/admin/settings')->assertRedirect(route('admin.login'));
+        $this->get('/admin/media')->assertRedirect(route('admin.login'));
     }
 
     public function test_json_requests_get_401_instead_of_a_redirect(): void

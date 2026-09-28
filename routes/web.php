@@ -13,12 +13,6 @@ use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\SettingsController;
-use App\Http\Controllers\Admin\ServiceController;
-use App\Http\Controllers\Admin\TeamMemberController;
-use App\Http\Controllers\Admin\ProjectController;
-use App\Http\Controllers\Admin\BlogPostController;
-use App\Http\Controllers\Admin\PricingPlanController;
 
 // Slugs are lowercase words joined by single hyphens; anything else 404s
 // without touching the database. Must precede the routes it applies to.
@@ -79,13 +73,4 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::put('/media/{media}', [MediaController::class, 'update'])->middleware('can:update,media')->name('media.update');
     Route::get('/media/{media}/delete', [MediaController::class, 'confirmDelete'])->middleware('can:delete,media')->name('media.delete');
     Route::delete('/media/{media}', [MediaController::class, 'destroy'])->middleware('can:delete,media')->name('media.destroy');
-
-    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
-    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
-
-    Route::resource('services', ServiceController::class)->except(['show']);
-    Route::resource('team', TeamMemberController::class)->except(['show']);
-    Route::resource('projects', ProjectController::class)->except(['show']);
-    Route::resource('blog', BlogPostController::class)->except(['show']);
-    Route::resource('pricing', PricingPlanController::class)->except(['show']);
 });
