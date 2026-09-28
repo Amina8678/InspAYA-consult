@@ -4,6 +4,7 @@ namespace App\View\Composers;
 
 use App\Models\Page;
 use App\Models\Service;
+use App\Support\SafeUrl;
 use App\Support\SiteSettings;
 use App\View\Presenters\MediaPresenter;
 use Illuminate\Support\Arr;
@@ -63,6 +64,7 @@ class SiteLayoutComposer
                     'address' => Arr::get($settings, 'contact.address'),
                 ],
                 'social' => collect(Arr::get($settings, 'social', []))
+                    ->map(SafeUrl::sanitize(...))
                     ->filter()
                     ->map(fn ($url, $network) => ['network' => $network, 'url' => $url])
                     ->values()

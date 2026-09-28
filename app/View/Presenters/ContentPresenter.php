@@ -8,6 +8,7 @@ use App\Models\CoreValue;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\Service;
+use App\Support\SafeUrl;
 use App\Support\SiteSettings;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -132,7 +133,7 @@ class ContentPresenter
             'expertise' => array_values($consultant->expertise ?? []),
             'qualifications' => array_values($consultant->qualifications ?? []),
             'email' => $consultant->email,
-            'links' => array_filter($consultant->links ?? []),
+            'links' => array_filter(array_map(SafeUrl::sanitize(...), $consultant->links ?? [])),
         ];
 
         if ($consultant->relationLoaded('services')) {
@@ -246,13 +247,30 @@ class ContentPresenter
                         continue;
                     }
 
-                    $data[$key] = $value;
+                    $data[$key] = $this->sanitizeUrls($value);
                 }
 
                 return ['type' => (string) $block['type'], 'data' => $data];
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * Any "url" key inside section data (e.g. call-to-action links) is
+     * CMS-entered, so unsafe schemes are dropped (see SafeUrl).
+     */
+    private function sanitizeUrls(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $key === 'url' ? SafeUrl::sanitize($item) : $this->sanitizeUrls($item);
+        }
+
+        return $value;
     }
 
     private function isoDate(?CarbonInterface $date): ?string
