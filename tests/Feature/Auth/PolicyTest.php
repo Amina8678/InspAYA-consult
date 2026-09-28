@@ -163,6 +163,8 @@ class PolicyTest extends TestCase
 
         $this->assertTrue($this->can($editor, 'update', $own));
         $this->assertFalse($this->can($editor, 'update', $other));
-        $this->assertFalse($this->can($editor, 'delete', $own));
+        // An editor lacks enquiries.delete, but may still delete their own note.
+        $this->assertTrue($this->can($editor, 'delete', $own));
+        $this->assertFalse($this->can($editor, 'delete', $other));
     }
 }

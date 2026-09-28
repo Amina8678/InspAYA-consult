@@ -37,6 +37,10 @@
                 <dd style="white-space: pre-line;">{{ $submission->message }}</dd>
                 <dt>Received</dt>
                 <dd><time datetime="{{ $submission->created_at->toIso8601String() }}">{{ $submission->created_at->format('j M Y, H:i') }}</time></dd>
+                @if ($canRespond && $submission->ip_address)
+                    <dt>IP address</dt>
+                    <dd>{{ $submission->ip_address }}</dd>
+                @endif
                 <dt>Consent given</dt>
                 <dd><time datetime="{{ $submission->consent_at->toIso8601String() }}">{{ $submission->consent_at->format('j M Y, H:i') }}</time></dd>
                 @if ($submission->responded_at)

@@ -166,12 +166,14 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
 
     // Internal enquiry notes (D1). Adding/editing needs enquiries.respond
     // (ContactSubmissionNotePolicy narrows editing to the note's own
-    // author); deleting follows enquiry deletion rights (enquiries.delete).
+    // author); deleting needs enquiries.delete OR being the note's own
+    // author, so the route also admits enquiries.respond, and
+    // ContactSubmissionNotePolicy::delete narrows it from there.
     Route::post('/enquiries/{submission}/notes', [ContactSubmissionNoteController::class, 'store'])->middleware('permission:enquiries.respond')->name('enquiries.notes.store');
     Route::get('/enquiries/{submission}/notes/{note}/edit', [ContactSubmissionNoteController::class, 'edit'])->middleware('permission:enquiries.respond')->name('enquiries.notes.edit');
     Route::put('/enquiries/{submission}/notes/{note}', [ContactSubmissionNoteController::class, 'update'])->middleware('permission:enquiries.respond')->name('enquiries.notes.update');
-    Route::get('/enquiries/{submission}/notes/{note}/delete', [ContactSubmissionNoteController::class, 'confirmDelete'])->middleware('permission:enquiries.delete')->name('enquiries.notes.delete');
-    Route::delete('/enquiries/{submission}/notes/{note}', [ContactSubmissionNoteController::class, 'destroy'])->middleware('permission:enquiries.delete')->name('enquiries.notes.destroy');
+    Route::get('/enquiries/{submission}/notes/{note}/delete', [ContactSubmissionNoteController::class, 'confirmDelete'])->middleware('permission:enquiries.delete|enquiries.respond')->name('enquiries.notes.delete');
+    Route::delete('/enquiries/{submission}/notes/{note}', [ContactSubmissionNoteController::class, 'destroy'])->middleware('permission:enquiries.delete|enquiries.respond')->name('enquiries.notes.destroy');
 
     // Site settings (FR-ADM-13).
     Route::get('/settings', [SiteSettingsController::class, 'edit'])->middleware('permission:settings.manage')->name('settings.edit');

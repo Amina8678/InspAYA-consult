@@ -8,6 +8,8 @@ use App\Http\Controllers\Site\ContactController;
 use App\Models\AuditLog;
 use App\Models\ContactSubmission;
 use App\Models\ContactSubmissionNote;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\SiteSettingsSeeder;
@@ -61,17 +63,36 @@ class EnquiryAdminTest extends TestCase
         $this->get(route('admin.enquiries.index'))->assertOk()
             ->assertSee('Governance review')
             ->assertDontSee('<script>alert(1)</script>', false)
-            ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false);
+            ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false)
+            // The IP address is a detail-page-only field (item 2), never the list.
+            ->assertDontSee('192.0.2.50');
 
         $show = $this->get(route('admin.enquiries.show', $submission))->assertOk();
         $show->assertDontSee('<script>alert(1)</script>', false)
             ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false)
             ->assertSee('href="mailto:ada@example.com"', false)
             ->assertSee('href="tel:+15550123"', false)
-            ->assertSee("Hello,\nWe would like to discuss a review.", false);
+            ->assertSee("Hello,\nWe would like to discuss a review.", false)
+            // Administrator holds enquiries.respond, so the detail page shows the IP.
+            ->assertSee('192.0.2.50');
+    }
 
-        // D7: the plan gives no role permission to see the IP in the CMS, so it is never shown.
-        $show->assertDontSee('192.0.2.50');
+    public function test_ip_address_is_hidden_from_roles_without_enquiries_respond(): void
+    {
+        $submission = ContactSubmission::factory()->create(['ip_address' => '192.0.2.99']);
+
+        // No seeded role has enquiries.view without enquiries.respond (they
+        // are granted together), so this checks the view's own gate with an
+        // ad-hoc role, rather than relying on that always being true.
+        $role = Role::factory()->create(['slug' => 'view-only-enquiries']);
+        $role->permissions()->attach(Permission::firstOrCreate(
+            ['slug' => 'enquiries.view'],
+            ['name' => 'Enquiries View', 'group' => 'enquiries'],
+        ));
+        $this->actingAs(User::factory()->withRole($role)->create());
+
+        $this->get(route('admin.enquiries.show', $submission))->assertOk()
+            ->assertDontSee('192.0.2.99');
     }
 
     // Status, assignment and notes -------------------------------------------
@@ -144,20 +165,29 @@ class EnquiryAdminTest extends TestCase
         $this->assertSame('Called back, no answer.', $note->fresh()->body);
     }
 
-    public function test_only_an_administrator_can_delete_a_note_even_its_own_author_cannot(): void
+    public function test_a_note_is_deleted_by_its_own_author_or_by_anyone_with_enquiries_delete(): void
     {
         $editor = $this->as('editor');
         $submission = ContactSubmission::factory()->create();
         $note = ContactSubmissionNote::factory()->for($submission, 'submission')->create(['user_id' => $editor->id]);
 
-        $this->get(route('admin.enquiries.notes.delete', [$submission, $note]))->assertForbidden();
-        $this->delete(route('admin.enquiries.notes.destroy', [$submission, $note]), ['confirm' => '1'])->assertForbidden();
-
-        $this->as('administrator');
+        // The editor lacks enquiries.delete, but wrote this note.
+        $this->get(route('admin.enquiries.notes.delete', [$submission, $note]))->assertOk();
         $this->delete(route('admin.enquiries.notes.destroy', [$submission, $note]), ['confirm' => '1'])
             ->assertRedirect(route('admin.enquiries.show', $submission));
         $this->assertModelMissing($note);
         $this->assertSame('note_deleted', AuditLog::latest('id')->first()->action);
+    }
+
+    public function test_an_editor_without_enquiries_delete_still_cannot_delete_someone_elses_note(): void
+    {
+        $this->as('editor');
+        $submission = ContactSubmission::factory()->create();
+        $note = ContactSubmissionNote::factory()->for($submission, 'submission')->create();
+
+        $this->get(route('admin.enquiries.notes.delete', [$submission, $note]))->assertForbidden();
+        $this->delete(route('admin.enquiries.notes.destroy', [$submission, $note]), ['confirm' => '1'])->assertForbidden();
+        $this->assertModelExists($note);
     }
 
     /**

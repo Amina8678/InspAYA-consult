@@ -14,9 +14,9 @@ use Illuminate\Http\Request;
 /**
  * Internal enquiry notes (D1, plan §6 row 28). Routes carry permission:
  * middleware; every action also authorizes against ContactSubmissionNotePolicy
- * (a note is edited only by its own author; deleting follows enquiry deletion
- * rights, not authorship). Audited against the parent enquiry, not the note,
- * so its history reads alongside the enquiry's own.
+ * (a note is edited only by its own author; deleting needs enquiry deletion
+ * rights or being the note's own author). Audited against the parent
+ * enquiry, not the note, so its history reads alongside the enquiry's own.
  */
 class ContactSubmissionNoteController extends Controller
 {
