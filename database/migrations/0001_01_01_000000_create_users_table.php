@@ -13,12 +13,24 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            // RESTRICT: a role still held by users cannot be deleted, so no
+            // account is ever left without a defined permission set.
+            $table->foreignId('role_id')->constrained()->restrictOnDelete();
             $table->string('name');
+            $table->string('username', 50)->unique();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('status', 20)->default('active')->index();
+            $table->timestamp('last_login_at')->nullable();
+            // MFA-ready (FR-ADM-02): schema only, populated by a later feature.
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
+            $table->timestamp('two_factor_confirmed_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
+
+            $table->index('role_id');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
