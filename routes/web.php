@@ -8,6 +8,7 @@ use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\ServiceController as SiteServiceController;
 use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Admin\AccountPasswordController;
+use App\Http\Controllers\Admin\CoreValueController as AdminCoreValueController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Auth\AdminLoginController;
@@ -74,6 +75,17 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::put('/media/{media}', [MediaController::class, 'update'])->middleware('can:update,media')->name('media.update');
     Route::get('/media/{media}/delete', [MediaController::class, 'confirmDelete'])->middleware('can:delete,media')->name('media.delete');
     Route::delete('/media/{media}', [MediaController::class, 'destroy'])->middleware('can:delete,media')->name('media.destroy');
+
+    // Core values (FR-VAL, FR-ADM-06). Editors: list and edit content;
+    // Admin+: create, delete, reorder, activate (plan §6).
+    Route::get('/core-values', [AdminCoreValueController::class, 'index'])->middleware('permission:values.edit|values.manage')->name('core-values.index');
+    Route::get('/core-values/create', [AdminCoreValueController::class, 'create'])->middleware('permission:values.manage')->name('core-values.create');
+    Route::post('/core-values', [AdminCoreValueController::class, 'store'])->middleware('permission:values.manage')->name('core-values.store');
+    Route::get('/core-values/{coreValue}/edit', [AdminCoreValueController::class, 'edit'])->middleware('permission:values.edit|values.manage')->name('core-values.edit');
+    Route::put('/core-values/{coreValue}', [AdminCoreValueController::class, 'update'])->middleware('permission:values.edit|values.manage')->name('core-values.update');
+    Route::post('/core-values/{coreValue}/move', [AdminCoreValueController::class, 'move'])->middleware('permission:values.manage')->name('core-values.move');
+    Route::get('/core-values/{coreValue}/delete', [AdminCoreValueController::class, 'confirmDelete'])->middleware('permission:values.manage')->name('core-values.delete');
+    Route::delete('/core-values/{coreValue}', [AdminCoreValueController::class, 'destroy'])->middleware('permission:values.manage')->name('core-values.destroy');
 
     // Site settings (FR-ADM-13).
     Route::get('/settings', [SiteSettingsController::class, 'edit'])->middleware('permission:settings.manage')->name('settings.edit');

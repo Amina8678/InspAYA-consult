@@ -8,6 +8,7 @@
     $navItems = array_values(array_filter([
         ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'show' => true],
         ['label' => 'Media library', 'route' => 'admin.media.index', 'match' => 'admin.media.*', 'show' => $user->can('media.view')],
+        ['label' => 'Core values', 'route' => 'admin.core-values.index', 'match' => 'admin.core-values.*', 'show' => $user->can('viewAny', App\Models\CoreValue::class)],
         ['label' => 'Site settings', 'route' => 'admin.settings.edit', 'match' => 'admin.settings.*', 'show' => $user->can('settings.manage')],
     ], fn (array $item) => $item['show']));
 @endphp

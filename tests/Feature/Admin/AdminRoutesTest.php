@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\CoreValue;
 use App\Models\Media;
 use App\Models\Role;
 use App\Models\User;
@@ -54,16 +55,30 @@ class AdminRoutesTest extends TestCase
             'media destroy' => ['DELETE', '/admin/media/:media', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
             'settings page' => ['GET', '/admin/settings', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'settings save' => ['PUT', '/admin/settings', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'core values list' => ['GET', '/admin/core-values', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'core value create page' => ['GET', '/admin/core-values/create', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'core value store' => ['POST', '/admin/core-values', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'core value edit' => ['GET', '/admin/core-values/:value/edit', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'core value update' => ['PUT', '/admin/core-values/:value', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'core value move' => ['POST', '/admin/core-values/:value/move', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'core value delete confirm' => ['GET', '/admin/core-values/:value/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'core value destroy' => ['DELETE', '/admin/core-values/:value', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
         ];
     }
+
+    /** Route placeholder => route parameter as registered. */
+    private const PLACEHOLDERS = [':media' => '{media}', ':value' => '{coreValue}'];
 
     private function hit(string $method, string $path)
     {
         $media = Media::factory()->create(['alt_text' => 'x']);
         Storage::disk('public')->put($media->storage_path, 'x');
+        $value = CoreValue::factory()->create();
 
         // Invalid/empty payloads: the point is authorization, not success.
-        return $this->from('/admin')->call($method, str_replace(':media', (string) $media->id, $path), ['alt_text' => 'x']);
+        $uri = strtr($path, [':media' => (string) $media->id, ':value' => (string) $value->id]);
+
+        return $this->from('/admin')->call($method, $uri, ['alt_text' => 'x']);
     }
 
     #[DataProvider('adminRoutes')]
@@ -105,7 +120,7 @@ class AdminRoutesTest extends TestCase
 
     public function test_every_admin_route_is_covered_and_protected(): void
     {
-        $covered = collect(self::adminRoutes())->map(fn ($r) => $r[0].' '.str_replace(':media', '{media}', $r[1]))->sort()->values()->all();
+        $covered = collect(self::adminRoutes())->map(fn ($r) => $r[0].' '.strtr($r[1], self::PLACEHOLDERS))->sort()->values()->all();
 
         $routes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => str_starts_with($route->uri(), 'admin') && ! in_array($route->uri(), ['admin/login', 'admin/logout', 'admin/forgot-password', 'admin/reset-password', 'admin/reset-password/{token}'], true));
