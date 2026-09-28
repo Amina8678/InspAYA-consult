@@ -2,10 +2,10 @@
 @extends('layouts.public')
 
 @section('content')
-    <div class="container page-header">
-        <h1>Consultants</h1>
-        <p class="lead">Experienced advisors across governance, finance, energy, engineering, digital systems and law.</p>
-    </div>
+    @include('public.partials.page-hero', [
+        'heroTitle' => 'Consultants',
+        'heroLead' => 'Experienced advisors across governance, finance, energy, engineering, digital systems and law.',
+    ])
 
     <section class="section section--muted" aria-label="All consultants">
         <div class="container">
@@ -16,7 +16,7 @@
                     @endforeach
                 </ul>
             @else
-                <p>Consultant profiles will be published here soon.</p>
+                <p class="text-block text-block--center">Consultant profiles will be published here soon.</p>
             @endif
         </div>
     </section>

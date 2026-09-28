@@ -8,16 +8,16 @@
 @endphp
 
 @section('content')
-    <div class="container page-header">
-        <h1>{{ $page['title'] ?? 'Contact us' }}</h1>
-        <p class="lead">Have a question or ready to discuss your organization's needs? Send us a message.</p>
-    </div>
+    @include('public.partials.page-hero', [
+        'heroTitle' => $page['title'] ?? 'Contact us',
+        'heroLead' => 'Have a question or ready to discuss your organization\'s needs? Send us a message.',
+    ])
 
     @include('public.partials.sections', ['sections' => $page['sections'] ?? []])
 
-    <div class="container section">
-        <div class="layout-split">
-            <section aria-labelledby="details-heading">
+    <div class="section section--muted">
+        <div class="container layout-split">
+            <section class="panel" aria-labelledby="details-heading">
                 <h2 id="details-heading">Contact details</h2>
                 @if (! empty($contact['email']) || ! empty($contact['phone']) || ! empty($contact['address']))
                     <dl class="contact-details">
@@ -39,7 +39,7 @@
                 @endif
             </section>
 
-            <section aria-labelledby="form-heading">
+            <section class="panel" aria-labelledby="form-heading">
                 <h2 id="form-heading">Send us a message</h2>
 
                 @if (session('status'))

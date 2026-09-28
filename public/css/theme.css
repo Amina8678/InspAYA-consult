@@ -1,53 +1,86 @@
 /*
- * InspAya Consult: theme tokens.
+ * InspAya Consult: theme tokens (restored "classic" look of the original site).
  *
  * Every colour, font and spacing value used by site.css is defined here, so
- * final branding (SRS Appendix B) can be applied by editing this file only.
- * Text colour pairs are checked for WCAG 2.2 AA (>= 4.5:1); keep them so when
- * rebranding. Focus and border colours need >= 3:1 against their background.
+ * branding can be swapped by editing this file only. Text pairs meet WCAG 2.2
+ * AA (>= 4.5:1) and are checked by tests/Unit/ThemeContrastTest.php; focus
+ * rings and borders need >= 3:1. Where the original palette failed, the
+ * nearest passing shade is used (noted below).
  */
 :root {
-  /* Colours: surfaces */
+  /* Surfaces */
   --color-bg: #ffffff;
-  --color-surface: #f3f5f8;
-  --color-surface-strong: #e3e8ee;
-  --color-border: #737f8b;          /* 4.1:1 on white (non-text) */
+  --color-surface: #f5f6f8;          /* original "bg-light" sections */
+  --color-surface-strong: #e6e9ee;
+  --color-border: #737f8b;           /* form borders, 4.1:1 on white */
 
-  /* Colours: text */
-  --color-text: #17212b;            /* 16.3:1 on white */
-  --color-text-muted: #46525e;      /* 8.0:1 on white, 7.3:1 on surface */
-  --color-heading: #0b2a45;
+  /* Text */
+  --color-text: #5c6370;             /* original #888 was 3.5:1; now 6.1:1 */
+  --color-text-strong: #21252f;      /* original "dark": 15.3:1 */
+  --color-heading: #21252f;
+  --color-text-muted: #5c6370;
 
-  /* Colours: brand */
-  --color-primary: #0b3a5d;         /* 11.8:1 on white */
-  --color-primary-hover: #072741;
+  /* Brand */
+  --color-navy: #0a1e38;             /* original navbar / button navy */
+  --color-gold: #b49659;             /* original button accent */
+  --color-primary: #0a58ca;          /* original #0d6efd was 4.3:1 on light; now 6.0:1 */
+  --color-primary-hover: #084298;
   --color-on-primary: #ffffff;
-  --color-accent: #8a5300;          /* 6.3:1 on white; small accents only */
+  --color-accent: #0a58ca;           /* eyebrow labels */
 
-  /* Colours: header and footer */
-  --color-header-bg: #ffffff;
-  --color-footer-bg: #0b2239;
-  --color-footer-text: #dfe6ee;     /* 12.8:1 on footer */
-  --color-footer-link: #ffffff;
+  /* Buttons (original navy with gold border and text) */
+  --color-button-bg: #0a1e39;
+  --color-button-text: #b49659;      /* 5.9:1 on the button navy */
+  --color-button-border: #b49659;
+  --color-button-hover-bg: #b49659;
+  --color-button-hover-text: #0a1e39; /* original used white: 2.8:1; navy is 5.9:1 */
 
-  /* Colours: states */
-  --color-focus: #b45309;           /* focus ring: 5.0:1 on white, 3.2:1 on footer (non-text) */
-  --color-error: #a4161a;           /* 6.8:1 on its background */
+  /* Header */
+  --color-header-bg: #0a1e38;
+  --color-header-text: #ffffff;      /* 16.7:1 */
+  --color-header-active: #b49659;    /* underline marker only */
+
+  /* Hero overlay (original #151433 at 80%) and no-image fallback */
+  --color-hero-overlay: rgb(21 20 51 / 0.8);
+  --color-hero-text: #ffffff;        /* >= 9.5:1 even over a white image */
+  --gradient-hero: linear-gradient(135deg, #0a1e38 0%, #151433 60%, #1d2b4f 100%);
+  --gradient-feature: linear-gradient(160deg, #0a1e38 0%, #151433 100%);
+
+  /* Footer */
+  --color-footer-bg: #21252f;
+  --color-footer-bottom-bg: #242938;
+  --color-footer-heading: #ffffff;
+  --color-footer-text: #c3c7cf;      /* original #888 was 4.3:1; now 9.0:1 */
+  --color-footer-link-hover: #ffffff;
+
+  /* Focus: amber on light areas, gold on dark ones */
+  --color-focus: #b45309;            /* 5.0:1 on white */
+  --color-focus-on-dark: #d9b56b;    /* 8.6:1 on navy */
+
+  /* States */
+  --color-error: #a4161a;
   --color-error-bg: #fdecec;
-  --color-success: #13532f;         /* 8.0:1 on its background */
+  --color-success: #13532f;
   --color-success-bg: #e5f3ea;
 
-  /* Typography: system fonts only (no remote or webfont downloads) */
-  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  /* Typography. The original used Sora from Google Fonts; remote fonts are
+     not allowed, so a system stack with a similar geometric feel is used.
+     To self-host Sora, add the woff2 files to public/fonts and put "Sora"
+     first here (see the @font-face note in site.css). */
+  --font-body: "Sora", "Avenir Next", Avenir, "Segoe UI", "Helvetica Neue", system-ui, -apple-system, Roboto, Arial, sans-serif;
   --font-heading: var(--font-body);
-  --font-size-base: 1.0625rem;
-  --font-size-small: 0.9375rem;
-  --font-size-lead: 1.25rem;
-  --font-size-h1: clamp(1.9rem, 1.4rem + 2.2vw, 2.9rem);
-  --font-size-h2: clamp(1.45rem, 1.2rem + 1vw, 1.9rem);
+  --font-size-base: 1rem;
+  --font-size-small: 0.875rem;
+  --font-size-nav: 0.875rem;         /* original 14px bold nav links */
+  --font-size-lead: 1.125rem;
+  --font-size-eyebrow: 0.8125rem;
+  --font-size-display: clamp(2.1rem, 1.5rem + 2.6vw, 3.5rem);
+  --font-size-h1: clamp(1.9rem, 1.45rem + 1.9vw, 2.75rem);
+  --font-size-h2: clamp(1.6rem, 1.3rem + 1.3vw, 2.4rem);
   --font-size-h3: 1.2rem;
-  --line-height: 1.6;
-  --line-height-tight: 1.25;
+  --font-weight-heading: 700;
+  --line-height: 1.7;                /* original */
+  --line-height-tight: 1.2;
 
   /* Spacing and shape */
   --space-1: 0.25rem;
@@ -58,8 +91,15 @@
   --space-6: 2rem;
   --space-7: 3rem;
   --space-8: 4.5rem;
-  --container-width: 72rem;
+  --section-padding-top: 3.25rem;    /* original 50px */
+  --section-padding-bottom: 5.5rem;  /* original 120px, reduced on phones */
+  --container-width: 75rem;
   --container-gutter: 1rem;
-  --radius: 6px;
-  --shadow-card: 0 1px 2px rgb(11 34 57 / 0.08), 0 2px 8px rgb(11 34 57 / 0.06);
+  --header-height: 4rem;             /* original min-height 64px */
+  --radius: 5px;                     /* original button radius */
+  --radius-card: 4px;
+  --shadow-card: 0 8px 22px rgb(0 0 0 / 0.1); /* original --box-shadow */
+  --shadow-header: 0 8px 22px rgb(0 0 0 / 0.1);
+  --iconbox-size: 3.375rem;          /* original 54px */
+  --avatar-size: 7.8rem;             /* original 125px team photos */
 }

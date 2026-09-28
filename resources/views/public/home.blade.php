@@ -1,4 +1,8 @@
-{{-- Home (FR-HOME-01 to 08). $page is null while the CMS Home page is unpublished. --}}
+{{--
+    Home (FR-HOME-01 to 08), in the original single-page style: full-height hero
+    with image and overlay, then centred sections on alternating backgrounds.
+    $page is null while the CMS Home page is unpublished.
+--}}
 @extends('layouts.public')
 
 @php
@@ -13,65 +17,50 @@
 @endphp
 
 @section('content')
-    <section class="hero" aria-labelledby="hero-heading">
-        <div class="container hero__inner {{ $heroImage ? 'hero__inner--with-image' : '' }}">
-            <div>
-                <h1 id="hero-heading">{{ $hero['heading'] ?? $siteName }}</h1>
-                @if (! empty($hero['body']))
-                    <p class="lead prose">{{ $hero['body'] }}</p>
-                @elseif (! $page && data_get($settings, 'seo.default_description'))
-                    <p class="lead">{{ data_get($settings, 'seo.default_description') }}</p>
-                @endif
-                @include('public.partials.ctas', ['data' => array_filter([
-                    'primary_cta' => $hero['primary_cta'] ?? null,
-                    'secondary_cta' => $hero['secondary_cta'] ?? null,
-                ]) ?: $defaultCtas])
-            </div>
-            @if ($heroImage)
-                <div class="hero__media">
-                    @include('public.partials.image', ['image' => $heroImage, 'lazy' => false])
-                </div>
+    <section class="hero {{ $heroImage ? 'hero--image' : '' }}" aria-labelledby="hero-heading">
+        @if ($heroImage)
+            {{-- Background photo under the overlay: decorative, the text carries the meaning. --}}
+            <div class="hero__bg">@include('public.partials.image', ['image' => $heroImage, 'lazy' => false, 'decorative' => true])</div>
+        @endif
+        <div class="container hero__content">
+            <h1 id="hero-heading" class="hero__title">{{ $hero['heading'] ?? $siteName }}</h1>
+            @if (! empty($hero['body']))
+                <p class="hero__text prose">{{ $hero['body'] }}</p>
+            @elseif (! $page && data_get($settings, 'seo.default_description'))
+                <p class="hero__text">{{ data_get($settings, 'seo.default_description') }}</p>
             @endif
+            @include('public.partials.ctas', ['onDark' => true, 'data' => array_filter([
+                'primary_cta' => $hero['primary_cta'] ?? null,
+                'secondary_cta' => $hero['secondary_cta'] ?? null,
+            ]) ?: $defaultCtas])
         </div>
     </section>
 
     @include('public.partials.sections', ['sections' => $sections, 'skip' => ['hero']])
 
     @if ($services)
-        <section class="section section--muted" aria-labelledby="services-heading">
+        <section class="section" aria-labelledby="services-heading">
             <div class="container">
-                <div class="section__header">
-                    <h2 id="services-heading">What we do</h2>
-                </div>
+                @include('public.partials.section-header', ['sectionEyebrow' => 'Services', 'sectionHeading' => 'What we do', 'sectionId' => 'services-heading'])
                 <ul class="grid">
                     @foreach ($services as $service)
                         <li>@include('public.partials.service-card', ['service' => $service, 'headingTag' => 'h3'])</li>
                     @endforeach
                 </ul>
-                <p><a href="{{ route('services.index') }}">All services</a></p>
+                <div class="button-row button-row--center">
+                    <a class="button" href="{{ route('services.index') }}">All services</a>
+                </div>
             </div>
         </section>
     @endif
 
     @if ($coreValues)
-        <section class="section" aria-labelledby="values-heading">
+        <section class="section section--muted" aria-labelledby="values-heading">
             <div class="container">
-                <div class="section__header">
-                    <h2 id="values-heading">Our core values</h2>
-                </div>
+                @include('public.partials.section-header', ['sectionEyebrow' => 'Core values', 'sectionHeading' => 'Our core values', 'sectionId' => 'values-heading'])
                 <ul class="grid">
                     @foreach ($coreValues as $value)
-                        <li>
-                            <article class="card">
-                                @if ($value['icon'])
-                                    <div class="icon">@include('public.partials.image', ['image' => $value['icon']])</div>
-                                @endif
-                                <h3>{{ $value['title'] }}</h3>
-                                @if ($value['description'])
-                                    <p class="prose">{{ $value['description'] }}</p>
-                                @endif
-                            </article>
-                        </li>
+                        <li>@include('public.partials.value-card', ['value' => $value, 'headingTag' => 'h3'])</li>
                     @endforeach
                 </ul>
             </div>
@@ -79,33 +68,33 @@
     @endif
 
     @if ($consultants)
-        <section class="section section--muted" aria-labelledby="consultants-heading">
+        <section class="section" aria-labelledby="consultants-heading">
             <div class="container">
-                <div class="section__header">
-                    <h2 id="consultants-heading">Our consultants</h2>
-                </div>
+                @include('public.partials.section-header', ['sectionEyebrow' => 'Our team', 'sectionHeading' => 'Our consultants', 'sectionId' => 'consultants-heading'])
                 <ul class="grid">
                     @foreach ($consultants as $consultant)
                         <li>@include('public.partials.consultant-card', ['consultant' => $consultant, 'headingTag' => 'h3'])</li>
                     @endforeach
                 </ul>
-                <p><a href="{{ route('consultants.index') }}">Meet all our consultants</a></p>
+                <div class="button-row button-row--center">
+                    <a class="button" href="{{ route('consultants.index') }}">Meet all our consultants</a>
+                </div>
             </div>
         </section>
     @endif
 
     @if ($insights)
-        <section class="section" aria-labelledby="insights-heading">
+        <section class="section section--muted" aria-labelledby="insights-heading">
             <div class="container">
-                <div class="section__header">
-                    <h2 id="insights-heading">Latest insights</h2>
-                </div>
+                @include('public.partials.section-header', ['sectionEyebrow' => 'Insights', 'sectionHeading' => 'Latest insights', 'sectionId' => 'insights-heading'])
                 <ul class="grid">
                     @foreach ($insights as $post)
                         <li>@include('public.partials.post-card', ['post' => $post, 'headingTag' => 'h3'])</li>
                     @endforeach
                 </ul>
-                <p><a href="{{ route('insights.index') }}">All insights</a></p>
+                <div class="button-row button-row--center">
+                    <a class="button" href="{{ route('insights.index') }}">All insights</a>
+                </div>
             </div>
         </section>
     @endif
@@ -113,9 +102,12 @@
     <section class="section" aria-labelledby="contact-cta-heading">
         <div class="container">
             <div class="callout">
+                <p class="eyebrow">Contact</p>
                 <h2 id="contact-cta-heading">Talk to us about your organization</h2>
                 <p>Tell us what you need and the right consultant will get back to you.</p>
-                <a class="button" href="{{ route('contact') }}">Contact us</a>
+                <div class="button-row button-row--center">
+                    <a class="button" href="{{ route('contact') }}">Contact us</a>
+                </div>
             </div>
         </div>
     </section>

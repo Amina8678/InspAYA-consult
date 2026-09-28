@@ -15,10 +15,10 @@
     ]);
     $shareUrl = $post['seo']['canonical_url'];
     $shareLinks = [
-        'LinkedIn' => 'https://www.linkedin.com/sharing/share-offsite/?url='.rawurlencode($shareUrl),
-        'X' => 'https://twitter.com/intent/tweet?url='.rawurlencode($shareUrl).'&text='.rawurlencode($post['title']),
-        'Facebook' => 'https://www.facebook.com/sharer/sharer.php?u='.rawurlencode($shareUrl),
-        'Email' => 'mailto:?subject='.rawurlencode($post['title']).'&body='.rawurlencode($shareUrl),
+        ['network' => 'linkedin', 'label' => 'LinkedIn', 'url' => 'https://www.linkedin.com/sharing/share-offsite/?url='.rawurlencode($shareUrl)],
+        ['network' => 'x', 'label' => 'X', 'url' => 'https://twitter.com/intent/tweet?url='.rawurlencode($shareUrl).'&text='.rawurlencode($post['title'])],
+        ['network' => 'facebook', 'label' => 'Facebook', 'url' => 'https://www.facebook.com/sharer/sharer.php?u='.rawurlencode($shareUrl)],
+        ['network' => 'mail', 'label' => 'email', 'url' => 'mailto:?subject='.rawurlencode($post['title']).'&body='.rawurlencode($shareUrl)],
     ];
 @endphp
 
@@ -30,30 +30,31 @@
 @endpush
 
 @section('content')
-    <div class="container">
-        <nav class="breadcrumb" aria-label="Breadcrumb">
-            <ol>
-                <li><a href="{{ route('home') }}">Home</a></li>
-                <li><a href="{{ route('insights.index') }}">Insights</a></li>
-                <li><a href="{{ $post['url'] }}" aria-current="page">{{ $post['title'] }}</a></li>
-            </ol>
-        </nav>
+    <div class="page-hero">
+        <div class="container">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                <ol>
+                    <li><a href="{{ route('home') }}">Home</a></li>
+                    <li><a href="{{ route('insights.index') }}">Insights</a></li>
+                    <li><a href="{{ $post['url'] }}" aria-current="page">{{ $post['title'] }}</a></li>
+                </ol>
+            </nav>
+            @if ($post['category'])
+                <p class="eyebrow">{{ $post['category']['name'] }}</p>
+            @endif
+            <h1>{{ $post['title'] }}</h1>
+            <p class="meta">
+                By {{ $post['author']['name'] }}
+                @if ($post['published_at'])
+                    <span aria-hidden="true">&middot;</span>
+                    <time datetime="{{ $post['published_at'] }}">{{ $post['published_on'] }}</time>
+                @endif
+            </p>
+        </div>
+    </div>
 
-        <article class="article section">
-            <header>
-                <h1>{{ $post['title'] }}</h1>
-                <p class="meta">
-                    By {{ $post['author']['name'] }}
-                    @if ($post['published_at'])
-                        <span aria-hidden="true">&middot;</span>
-                        <time datetime="{{ $post['published_at'] }}">{{ $post['published_on'] }}</time>
-                    @endif
-                    @if ($post['category'])
-                        <span aria-hidden="true">&middot;</span> {{ $post['category']['name'] }}
-                    @endif
-                </p>
-            </header>
-
+    <div class="section">
+        <article class="container article">
             @if ($post['featured_image'])
                 <div class="article__image">
                     @include('public.partials.image', ['image' => $post['featured_image'], 'lazy' => false])
@@ -74,16 +75,21 @@
             <section class="share" aria-labelledby="share-heading">
                 <h2 id="share-heading">Share this article</h2>
                 <ul>
-                    @foreach ($shareLinks as $network => $href)
-                        <li>
-                            <a href="{{ $href }}" @if ($network !== 'Email') target="_blank" rel="noopener noreferrer" @endif>
-                                {{ $network }}@if ($network !== 'Email')<span class="visually-hidden"> (opens in a new tab)</span>@endif
-                            </a>
-                        </li>
-                    @endforeach
+                    <li>
+                        <ul class="social-icons">
+                            @foreach ($shareLinks as $link)
+                                <li>
+                                    <a href="{{ $link['url'] }}" @if ($link['network'] !== 'mail') target="_blank" rel="noopener noreferrer" @endif>
+                                        @include('public.partials.icon', ['name' => $link['network']])
+                                        <span class="visually-hidden">Share on {{ $link['label'] }}@if ($link['network'] !== 'mail') (opens in a new tab)@endif</span>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </li>
                     <li>
                         {{-- Shown by site.js when the Clipboard API is available. --}}
-                        <button type="button" class="button button--secondary" data-copy-url="{{ $shareUrl }}"
+                        <button type="button" class="button copy-link" data-copy-url="{{ $shareUrl }}"
                                 aria-describedby="copy-status" hidden>Copy link</button>
                     </li>
                 </ul>
@@ -95,7 +101,7 @@
     @if ($post['related'])
         <section class="section section--muted" aria-labelledby="related-heading">
             <div class="container">
-                <h2 id="related-heading">Related insights</h2>
+                @include('public.partials.section-header', ['sectionEyebrow' => 'Insights', 'sectionHeading' => 'Related insights', 'sectionId' => 'related-heading'])
                 <ul class="grid">
                     @foreach ($post['related'] as $related)
                         <li>@include('public.partials.post-card', ['post' => $related, 'headingTag' => 'h3'])</li>

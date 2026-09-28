@@ -2,16 +2,14 @@
 @extends('layouts.public')
 
 @section('content')
-    <div class="container page-header">
-        <h1>{{ $page['title'] }}</h1>
-    </div>
+    @include('public.partials.page-hero', ['heroTitle' => $page['title']])
 
     @include('public.partials.sections', ['sections' => $page['sections']])
 
     @if ($consultants)
         <section class="section section--muted" aria-labelledby="leadership-heading">
             <div class="container">
-                <h2 id="leadership-heading">Leadership and consultants</h2>
+                @include('public.partials.section-header', ['sectionEyebrow' => 'Our team', 'sectionHeading' => 'Leadership and consultants', 'sectionId' => 'leadership-heading'])
                 <ul class="grid">
                     @foreach ($consultants as $consultant)
                         <li>@include('public.partials.consultant-card', ['consultant' => $consultant, 'headingTag' => 'h3'])</li>
