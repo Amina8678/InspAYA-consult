@@ -1,14 +1,17 @@
 <?php
 
-namespace Database\Seeders\Demo;
+namespace Database\Seeders;
 
 use App\Models\CoreValue;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * Demo content (non-production only). The six values are named in FR-VAL-01;
- * descriptions are placeholders. No icons (no image files are seeded).
+ * The six core values named in FR-VAL-01, seeded in every environment.
+ * Descriptions are placeholders until the client supplies approved copy.
+ * No icons (no image files are seeded).
+ *
+ * Idempotent and non-destructive: matched by slug, never overwritten.
  */
 class CoreValueSeeder extends Seeder
 {
