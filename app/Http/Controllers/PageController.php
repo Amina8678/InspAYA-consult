@@ -63,9 +63,10 @@ class PageController extends Controller
             'contact_heading'    => Setting::get('contact_heading', 'Get In Touch'),
             'contact_subheading' => Setting::get('contact_subheading', "Have a question or ready to discuss your organization's needs? Reach out to our team, and we'll respond promptly to arrange a consultation."),
 
-            'footer_address' => Setting::get('footer_address', '2715 Ash Dr. San Jose, South Dakota 83475'),
-            'footer_email'   => Setting::get('footer_email', 'mohammedamina8678@gmail.com'),
-            'footer_phone'   => Setting::get('footer_phone', '059 953 8678'),
+            'footer_address'     => Setting::get('footer_address', '2715 Ash Dr. San Jose, South Dakota 83475'),
+            'footer_email'       => Setting::get('footer_email', 'mohammedamina8678@gmail.com'),
+            'footer_phone'       => Setting::get('footer_phone', '059 953 8678'),
+            'footer_right_image' => Setting::get('footer_right_image', ''),
         ];
 
         $services     = Service::orderBy('order')->get();

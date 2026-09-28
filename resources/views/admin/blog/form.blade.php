@@ -17,10 +17,6 @@
             <label class="form-label">Excerpt</label>
             <textarea name="excerpt" rows="3" class="form-control">{{ old('excerpt', $item->excerpt) }}</textarea>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Order</label>
-            <input type="number" name="order" class="form-control" value="{{ old('order', $item->order ?? 0) }}">
-        </div>
         <button class="btn btn-dark">Save</button>
         <a href="{{ route('admin.blog.index') }}" class="btn btn-link">Cancel</a>
     </form>

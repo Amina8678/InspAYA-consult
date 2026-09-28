@@ -15,18 +15,24 @@ class TeamMemberController extends Controller
 
     public function create()
     {
-        return view('admin.team.form', ['item' => new TeamMember()]);
+        return view('admin.team.form', [
+            'item'      => new TeamMember(),
+            'nextOrder' => (TeamMember::max('order') ?? 0) + 1,
+        ]);
     }
 
     public function store(Request $request)
     {
-        TeamMember::create($this->validated($request));
+        $data = $this->validated($request);
+        $data['order'] = (TeamMember::max('order') ?? 0) + 1;
+
+        TeamMember::create($data);
         return redirect()->route('admin.team.index')->with('status', 'Team member created.');
     }
 
     public function edit(TeamMember $team)
     {
-        return view('admin.team.form', ['item' => $team]);
+        return view('admin.team.form', ['item' => $team, 'nextOrder' => $team->order]);
     }
 
     public function update(Request $request, TeamMember $team)
@@ -50,7 +56,6 @@ class TeamMemberController extends Controller
             'facebook'  => ['nullable', 'string', 'max:255'],
             'twitter'   => ['nullable', 'string', 'max:255'],
             'instagram' => ['nullable', 'string', 'max:255'],
-            'order'     => ['nullable', 'integer'],
         ]);
     }
 }

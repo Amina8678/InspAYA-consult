@@ -12,6 +12,7 @@
 
     @php
         // Convert the hero overlay hex color into rgb components for use with the configurable opacity.
+        // Still used by the portfolio hover overlay below, even though the hero overlay itself was removed.
         $overlayHex = ltrim($settings['hero_overlay_color'], '#');
         if (strlen($overlayHex) === 3) {
             $overlayHex = preg_replace('/(.)/', '$1$1', $overlayHex);
@@ -91,6 +92,14 @@
             background: {{ $settings['btn_bg'] }};
             border: 1.5px solid {{ $settings['btn_border'] }};
             color: {{ $settings['btn_border'] }};
+            transition: all 0.3s ease;
+        }
+
+        .btn-brand:hover,
+        .btn-brand:focus {
+            background: {{ $settings['btn_border'] }};
+            border-color: {{ $settings['btn_border'] }};
+            color: #fff;
         }
 
         .hero {
@@ -332,8 +341,8 @@
                 <form class="d-flex" role="search">
                     <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"
                         style="background:#DADDE1; border:1px solid {{ $settings['btn_border'] }}; height:34px;">
-                    <button class="btn btn-outline-success" type="submit"
-                        style="border:1px solid {{ $settings['btn_border'] }}; color:{{ $settings['btn_border'] }}; height:34px; padding:4px 12px; font-size:13px;">
+                    <button class="btn btn-brand" type="submit"
+                        style="height:34px; padding:4px 12px; font-size:13px;">
                         Search
                     </button>
                 </form>
@@ -569,7 +578,7 @@
                 </div>
 
                 <div class="col-md-10 d-grid">
-                    <button type="submit" class="btn btn-primary">Contact</button>
+                    <button type="submit" class="btn btn-brand">Contact</button>
                 </div>
             </form>
         </div>
@@ -580,10 +589,12 @@
     <footer>
         <div class="footer-top">
             <div class="container">
-                <div class="row gy-4">
-                    <div class="col-md-4">
-                        <a href="#" class="footer-logo" aria-label="{{ $settings['site_name'] }}"></a>
-                    </div>
+                <div class="row gy-4 align-items-center">
+                    @if (!empty($settings['footer_right_image']))
+                        <div class="col-md-4">
+                            <img src="{{ asset($settings['footer_right_image']) }}" alt="" style="width:auto; max-width:100%; max-height:220px;">
+                        </div>
+                    @endif
                     <div class="col-md-2">
                         <h5 class="text-white">Brand</h5>
                         <ul class="list-unstyled">
@@ -602,7 +613,7 @@
                             <li><a href="#">Shipment</a></li>
                         </ul>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <h5 class="text-white">Contact</h5>
                         <ul class="list-unstyled">
                             <li>Address: {{ $settings['footer_address'] }}</li>
