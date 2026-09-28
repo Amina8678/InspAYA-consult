@@ -197,6 +197,9 @@ class RenderedPagesTest extends SiteTestCase
 
         $response->assertSee('Page not found')
             ->assertSee('<meta name="robots" content="noindex">', false)
+            ->assertDontSee('rel="canonical"', false)
+            ->assertSee('<nav class="main-nav" aria-label="Main">', false)
+            ->assertSee('class="site-footer"', false)
             ->assertSee(route('contact'), false);
         $this->assertSame(1, substr_count($response->getContent(), '<h1'));
     }

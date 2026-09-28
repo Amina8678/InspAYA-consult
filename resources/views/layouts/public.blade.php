@@ -1,7 +1,7 @@
 {{--
-    Base layout for the public site. Receives the shared contract variables
-    ($settings, $navigation, $footer, $seo) from the page view. Error pages
-    get none of them, so every shared value has a fallback here.
+    Base layout for the public site. Receives $settings and $seo from the page
+    view; error pages pass none, so both have fallbacks here. The header and
+    footer partials get their own shared data (they are public.* views).
 --}}
 @php
     $settings = $settings ?? [];
@@ -69,38 +69,13 @@
 <body>
     <a class="skip-link" href="#main">Skip to main content</a>
 
-    <header class="site-header">
-        <div class="container site-header__inner">
-            <a class="brand" href="{{ route('home') }}">
-                @if ($logo)
-                    <img src="{{ $logo['url'] }}" alt="{{ $siteName }} home"
-                         @if ($logo['width']) width="{{ $logo['width'] }}" @endif
-                         @if ($logo['height']) height="{{ $logo['height'] }}" @endif>
-                @else
-                    {{ $siteName }}
-                @endif
-            </a>
-
-            @if (! empty($navigation))
-                <nav class="main-nav" aria-label="Main">
-                    <ul>
-                        @foreach ($navigation as $item)
-                            <li>
-                                <a href="{{ $item['url'] }}"
-                                   @if ($item['active']) aria-current="{{ $item['url'] === url()->current() ? 'page' : 'true' }}" @endif>{{ $item['label'] }}</a>
-                            </li>
-                        @endforeach
-                    </ul>
-                </nav>
-            @endif
-        </div>
-    </header>
+    @include('public.partials.header')
 
     <main id="main" tabindex="-1">
         @yield('content')
     </main>
 
-    @include('public.partials.footer', ['footer' => $footer ?? null, 'siteName' => $siteName])
+    @include('public.partials.footer')
 
     <script src="{{ asset('js/site.js') }}" defer></script>
 </body>

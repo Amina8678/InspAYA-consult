@@ -17,9 +17,12 @@ view the backend asks for, and exactly what data that view receives.
 2. **Shared data.** Every view whose name starts with `public.` automatically
    receives `$settings`, `$navigation` and `$footer` (section 4). The base
    layout is `layouts.public` (`resources/views/layouts/public.blade.php`): it
-   receives them, and `$seo`, from the page view that `@extends` it, and
-   partials get them from whatever includes them. Error pages (`errors.*`)
-   receive none of them, so the layout falls back to defaults there.
+   receives them, and `$seo`, from the page view that `@extends` it. The header
+   and footer are `public.partials.header` and `public.partials.footer`; being
+   `public.*` views, they receive the shared data wherever they're included, so
+   error pages (`errors.*`) still get the full header and footer even though
+   the error view itself receives nothing (the layout falls back to defaults
+   for `$settings` and `$seo`).
 3. **Everything is plain data.** Variables are arrays (and one paginator), not
    database objects. Read fields with array syntax: `$service['title']`.
    Anything not listed here is not available; ask for it rather than guessing.
@@ -81,9 +84,10 @@ Any other shape (capitals, underscores) is a 404.
 
 A 404 is the backend deliberately saying "this page is not public", not an
 error: the content is unpublished, inactive, scheduled for later, or does not
-exist. Laravel renders `resources/views/errors/404.blade.php` if present
-(otherwise its built-in page). That file receives **none** of the shared
-variables; keep it self-contained, with links back to `/` and `/contact`.
+exist. Laravel renders `resources/views/errors/404.blade.php` (and `429` for
+rate limits). The error view itself receives **none** of the page variables;
+it gets the site header and footer through the layout's partials (rule 2) and
+is marked `noindex`.
 Anything else going wrong is a 500, which is always a backend bug to report.
 
 ---

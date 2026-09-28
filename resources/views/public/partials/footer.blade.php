@@ -1,4 +1,9 @@
-{{-- Site footer (FR-HOME-08). $footer is null on error pages. --}}
+{{--
+    Site footer (FR-HOME-08). As a public.* view it receives $settings and
+    $footer from the shared composer wherever it is included, including on
+    error pages.
+--}}
+@php($siteName = data_get($settings, 'branding.site_name') ?: config('app.name'))
 <footer class="site-footer">
     <div class="container">
         @if ($footer)
