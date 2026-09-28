@@ -166,6 +166,18 @@ The column is NOT NULL because every CMS user must have a role for authorization
 
 **Index** (`status`, `published_at`).
 
+`structured_content` shape (validated in the app layer, not the DB): an ordered
+array of section blocks, each `{ "type": "<section>", "data": { … } }`. Images
+inside blocks are stored as **media ids** (`"background_media_id": 12`), never
+paths. The home page's `hero` block carries `background_media_id` (was the
+`hero_bg_image` setting) and its `feature` block carries `background_media_id`
+(was `feature_bg_image`).
+
+JSON media ids are not DB-enforced foreign keys, so deleting a media row cannot
+null them automatically. The media-delete flow (controller step) must clear or
+refuse ids referenced from `structured_content`. Rendering must treat an unknown
+id as "no image".
+
 ### 3.7 `services`
 
 | Column | Type | Null | Notes |
@@ -328,6 +340,22 @@ PK (`blog_post_id`, `tag_id`); **index** `tag_id`.
 
 SMTP credentials stay in `.env`, never in this table (D8).
 
+**Image settings (`type = media`, value in `media_id`)**, replacing the
+`storage/images/…` path strings the current `SettingsController` writes:
+
+| Key | Group | Replaces current key |
+|---|---|---|
+| `branding.logo` | branding | `logo_image` |
+| `branding.footer_logo` | branding | `footer_logo_image` |
+| `branding.footer_image` | branding | `footer_right_image` |
+
+`hero_bg_image` and `feature_bg_image` are **not** site settings. They are
+home-page content, so they move to the `home` page's `structured_content` as
+media ids in the hero and feature section blocks (see §3.6).
+
+Seeded values are placeholders only. Nothing is copied from the current
+`PageController` footer defaults (see §11).
+
 ### 3.18 `audit_logs`
 
 | Column | Type | Null | Notes |
@@ -422,7 +450,7 @@ how that is (or isn't) represented.
 | 19 | `posts.edit-any` | ✓ | ✓ | ✓ | | ″ | |
 | 20 | `posts.delete` | ✓ | ✓ | ✓ | | *(no §7 row; A8)* | Author cannot delete, even own posts (least privilege) |
 | 21 | `taxonomy.manage` | ✓ | ✓ | ✓ | | *(no §7 row; A8)* | categories & tags |
-| 22 | `content.publish` | ✓ | ✓ | ✓ | | Publish content (Full / Full / Approved items only / No) | **Editor restriction not implemented** (deferred, §7 below). Editor currently gets unrestricted publish. |
+| 22 | `content.publish` | ✓ | ✓ | | | Publish content (Full / Full / Approved items only / No) | **Withheld from Editors** until "approved" is defined (D12, §7). Editors can move posts to `review`; SA/Admin publish. |
 | 23 | `media.view` | ✓ | ✓ | ✓ | ✓ | Manage media library (Full / Full / Full / Limited) | |
 | 24 | `media.upload` | ✓ | ✓ | ✓ | ✓ | ″ | |
 | 25 | `media.manage-own` | ✓ | ✓ | ✓ | ✓ | ″ | Author "Limited" = edit/replace/delete own uploads only (`uploader_id`) |
@@ -444,7 +472,7 @@ Super Admin is seeded with **all** permissions explicitly.
 |---|---|---|
 | Testimonials / FAQs | In §1.4 scope, no §4 entity, unconfirmed in App. B | New `testimonials` (quote, author_name, author_title, organization, photo_id → media SET NULL, is_active, sort_order) and `faqs` (question, answer, is_active, sort_order) tables. Additive migrations, `services.edit`-style permissions. |
 | Scheduled publishing | FR-BLOG-02 mentions it but never defines it | No schema change needed: the `(status, published_at)` index already supports "published and `published_at` ≤ now". Implementation is a query scope plus the publish flow. If a distinct state is wanted, add `scheduled` to `PostStatus` (no migration, string column). |
-| Editor "Approved items only" | §7 doesn't define approval | Additive `approved_by` (FK users SET NULL) + `approved_at` on `blog_posts`/`pages`, and an Editor check in the post policy. Until then row 22 above is unrestricted for Editors. |
+| Editor "Approved items only" | §7 doesn't define approval | Additive `approved_by` (FK users SET NULL) + `approved_at` on `blog_posts`/`pages`, and an Editor check in the post policy, then grant `content.publish` to Editor. Until then Editors cannot publish (row 22 in §6). |
 | Redirect management (NFR-SEO-05) | Not in §4 | `redirects` (from_path unique, to_path, status_code, hits). |
 | Backup status (FR-ADM-14) | Not in §4 | Read from backup tooling, or `site_settings` key `system.last_backup_at`. |
 
@@ -487,13 +515,11 @@ Super Admin is seeded with **all** permissions explicitly.
 
 ---
 
-## 9. Defaults pending review
+## 9. Decisions (all approved)
 
-Decided already: failing test skipped (not fixed via controller); `config/inspaya.php`
+Also decided: failing test skipped (not fixed via controller); `config/inspaya.php`
 approved; two-factor columns added; single role per user; testimonials/FAQs,
 scheduling and Editor approval deferred.
-
-Still on defaults, and applied unless overridden:
 
 - **D1.** Enquiry notes live in a separate `contact_submission_notes` table (multi-author, timestamped), not one `internal_notes` column.
 - **D2.** Page statuses are draft/published only (no review step for pages).
@@ -506,7 +532,7 @@ Still on defaults, and applied unless overridden:
 - **D9.** Audit-log immutability is app-level only (model guard); DB triggers / a restricted DB user are an ops decision.
 - **D10.** Demo content (categories, tags, consultants, posts) is seeded only when `APP_ENV` ≠ `production`. Roles, Super Admin, settings, the seven services, six values and core pages are seeded everywhere.
 - **D11.** Admin-panel permission gaps (pages, taxonomy, post deletion) are mapped as in §6 rows 15, 16, 20, 21.
-- **D12.** Editors get unrestricted `content.publish` until the approval rule is defined. The alternative is to withhold publish from Editors entirely until then.
+- **D12.** Editors do **not** get `content.publish` until the "approved items only" rule is defined (§7). SA and Admin publish.
 
 ---
 
@@ -517,3 +543,18 @@ Still on defaults, and applied unless overridden:
 3. Users are deactivated (`status = inactive`), not deleted, in normal operation. This is why RESTRICT on `author_id` and `role_id` is acceptable.
 4. No existing production data needs preserving. `migrate:fresh` is acceptable.
 5. Placeholder content is clearly marked as placeholder and doesn't pretend to be approved client copy (App. B).
+
+---
+
+## 11. Findings from merging `origin/main` (2c9ef22) — for the controller step
+
+Commit `2c9ef22` changed controllers and views only; no schema files. These
+issues sit outside this step's scope (no controller changes), but the controller
+rewrite must address them:
+
+| # | Finding | Where | Required in controller step |
+|---|---|---|---|
+| F1 | Uploaded images are stored as path strings in settings (`storage/images/…`), validated only with `image` + `max`. This does not meet **NFR-SEC-10**: no MIME/content inspection beyond the `image` rule, no approved-type allow-list, no randomized-name policy, no media-library record. | `Admin/SettingsController::update` | Route every upload through the media library (§3.5): allow-list MIME types, inspect content, store under randomized names, create a `media` row, and save the `media_id`. |
+| F2 | New items get `order = max(order) + 1`. Two concurrent creates can read the same max and get the **same position** (race). | `Admin/{Service,BlogPost,TeamMember,Project,PricingPlan}Controller::store` | Compute and insert inside a transaction with a lock (`lockForUpdate` on the max query), or allow ties and break them by `id`. Keep "new items append at the end" behaviour on `sort_order`. |
+| F3 | `PageController::home` hard-codes a **personal Gmail address and phone number** as footer fallbacks. | `PageController::home` | Remove the fallbacks and read from `site_settings`. **Seeders must use placeholders only** (e.g. `hello@example.com`, `+000 000 0000`), never these values. |
+| F4 | Controllers and views still use `order`, `image` path columns and the removed models. | all admin controllers, `welcome.blade.php` | Already covered by §2: they break when the stage (b) schema lands, and are rewritten in step 2. |
