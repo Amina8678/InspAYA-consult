@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -47,6 +48,11 @@ class AppServiceProvider extends ServiceProvider
         Model::preventLazyLoading(! $this->app->isProduction());
 
         View::composer('public.*', SiteLayoutComposer::class);
+
+        // Password policy for every password set through the app (changes and
+        // resets). The SRS defines none beyond hashing (NFR-SEC-01); see
+        // docs/admin-auth.md.
+        Password::defaults(fn () => Password::min(12)->letters()->mixedCase()->numbers()->symbols());
 
         // Stable aliases for audit_logs.entity_type, so stored rows don't
         // depend on PHP class names.
