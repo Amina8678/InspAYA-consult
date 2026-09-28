@@ -1,23 +1,26 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Site\ConsultantController;
-use App\Http\Controllers\Site\CoreValueController;
-use App\Http\Controllers\Site\InsightController;
-use App\Http\Controllers\Site\PageController;
-use App\Http\Controllers\Site\ServiceController as SiteServiceController;
-use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Admin\AccountPasswordController;
+use App\Http\Controllers\Admin\BlogPostController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ConsultantController as AdminConsultantController;
 use App\Http\Controllers\Admin\CoreValueController as AdminCoreValueController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\SiteSettingsController;
+use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Site\ConsultantController;
+use App\Http\Controllers\Site\ContactController;
+use App\Http\Controllers\Site\CoreValueController;
+use App\Http\Controllers\Site\InsightController;
+use App\Http\Controllers\Site\PageController;
+use App\Http\Controllers\Site\ServiceController as SiteServiceController;
+use Illuminate\Support\Facades\Route;
 
 // Slugs are lowercase words joined by single hyphens; anything else 404s
 // without touching the database. Must precede the routes it applies to.
@@ -121,6 +124,35 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::post('/core-values/{coreValue}/move', [AdminCoreValueController::class, 'move'])->middleware('permission:values.manage')->name('core-values.move');
     Route::get('/core-values/{coreValue}/delete', [AdminCoreValueController::class, 'confirmDelete'])->middleware('permission:values.manage')->name('core-values.delete');
     Route::delete('/core-values/{coreValue}', [AdminCoreValueController::class, 'destroy'])->middleware('permission:values.manage')->name('core-values.destroy');
+
+    // Blog posts (FR-BLOG, FR-ADM-08). Everyone who writes posts can list
+    // and create; editing needs posts.edit-own|posts.edit-any (BlogPostPolicy
+    // narrows this to "own drafts only" for Authors); deleting needs
+    // posts.delete (D11: Authors never delete, even their own).
+    Route::get('/posts', [BlogPostController::class, 'index'])->middleware('permission:posts.create|posts.edit-any')->name('posts.index');
+    Route::get('/posts/create', [BlogPostController::class, 'create'])->middleware('permission:posts.create')->name('posts.create');
+    Route::post('/posts', [BlogPostController::class, 'store'])->middleware('permission:posts.create')->name('posts.store');
+    Route::get('/posts/{post}/edit', [BlogPostController::class, 'edit'])->middleware('permission:posts.edit-own|posts.edit-any')->name('posts.edit');
+    Route::put('/posts/{post}', [BlogPostController::class, 'update'])->middleware('permission:posts.edit-own|posts.edit-any')->name('posts.update');
+    Route::get('/posts/{post}/delete', [BlogPostController::class, 'confirmDelete'])->middleware('permission:posts.delete')->name('posts.delete');
+    Route::delete('/posts/{post}', [BlogPostController::class, 'destroy'])->middleware('permission:posts.delete')->name('posts.destroy');
+
+    // Blog categories and tags (FR-BLOG-01, plan §6 row 21).
+    Route::get('/categories', [CategoryController::class, 'index'])->middleware('permission:taxonomy.manage|posts.create')->name('categories.index');
+    Route::get('/categories/create', [CategoryController::class, 'create'])->middleware('permission:taxonomy.manage')->name('categories.create');
+    Route::post('/categories', [CategoryController::class, 'store'])->middleware('permission:taxonomy.manage')->name('categories.store');
+    Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->middleware('permission:taxonomy.manage')->name('categories.edit');
+    Route::put('/categories/{category}', [CategoryController::class, 'update'])->middleware('permission:taxonomy.manage')->name('categories.update');
+    Route::get('/categories/{category}/delete', [CategoryController::class, 'confirmDelete'])->middleware('permission:taxonomy.manage')->name('categories.delete');
+    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->middleware('permission:taxonomy.manage')->name('categories.destroy');
+
+    Route::get('/tags', [TagController::class, 'index'])->middleware('permission:taxonomy.manage|posts.create')->name('tags.index');
+    Route::get('/tags/create', [TagController::class, 'create'])->middleware('permission:taxonomy.manage')->name('tags.create');
+    Route::post('/tags', [TagController::class, 'store'])->middleware('permission:taxonomy.manage')->name('tags.store');
+    Route::get('/tags/{tag}/edit', [TagController::class, 'edit'])->middleware('permission:taxonomy.manage')->name('tags.edit');
+    Route::put('/tags/{tag}', [TagController::class, 'update'])->middleware('permission:taxonomy.manage')->name('tags.update');
+    Route::get('/tags/{tag}/delete', [TagController::class, 'confirmDelete'])->middleware('permission:taxonomy.manage')->name('tags.delete');
+    Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->middleware('permission:taxonomy.manage')->name('tags.destroy');
 
     // Site settings (FR-ADM-13).
     Route::get('/settings', [SiteSettingsController::class, 'edit'])->middleware('permission:settings.manage')->name('settings.edit');

@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\BlogPost;
+use App\Models\Category;
 use App\Models\Consultant;
 use App\Models\CoreValue;
 use App\Models\Media;
 use App\Models\Page;
-use App\Models\Service;
 use App\Models\Role;
+use App\Models\Service;
+use App\Models\Tag;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,11 +92,40 @@ class AdminRoutesTest extends TestCase
             'core value move' => ['POST', '/admin/core-values/:value/move', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'core value delete confirm' => ['GET', '/admin/core-values/:value/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'core value destroy' => ['DELETE', '/admin/core-values/:value', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            // Posts: everyone who writes posts can list and create (all four
+            // seeded roles have posts.create); editing/deleting a post nobody
+            // here owns needs posts.edit-any/posts.delete, so Authors (own
+            // drafts only, never delete — D11) are denied at this generic,
+            // ownership-blind level (same pattern as media edit above).
+            'posts list' => ['GET', '/admin/posts', $everyone, [self::NONE], 200],
+            'post create page' => ['GET', '/admin/posts/create', $everyone, [self::NONE], 200],
+            'post store' => ['POST', '/admin/posts', $everyone, [self::NONE], 302],
+            'post edit' => ['GET', '/admin/posts/:post/edit', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'post update' => ['PUT', '/admin/posts/:post', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'post delete confirm' => ['GET', '/admin/posts/:post/delete', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'post destroy' => ['DELETE', '/admin/posts/:post', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'categories list' => ['GET', '/admin/categories', $everyone, [self::NONE], 200],
+            'category create page' => ['GET', '/admin/categories/create', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'category store' => ['POST', '/admin/categories', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'category edit' => ['GET', '/admin/categories/:category/edit', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'category update' => ['PUT', '/admin/categories/:category', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'category delete confirm' => ['GET', '/admin/categories/:category/delete', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'category destroy' => ['DELETE', '/admin/categories/:category', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'tags list' => ['GET', '/admin/tags', $everyone, [self::NONE], 200],
+            'tag create page' => ['GET', '/admin/tags/create', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'tag store' => ['POST', '/admin/tags', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'tag edit' => ['GET', '/admin/tags/:tag/edit', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'tag update' => ['PUT', '/admin/tags/:tag', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'tag delete confirm' => ['GET', '/admin/tags/:tag/delete', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'tag destroy' => ['DELETE', '/admin/tags/:tag', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
         ];
     }
 
     /** Route placeholder => route parameter as registered. */
-    private const PLACEHOLDERS = [':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}', ':page' => '{page}'];
+    private const PLACEHOLDERS = [
+        ':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}', ':page' => '{page}',
+        ':post' => '{post}', ':category' => '{category}', ':tag' => '{tag}',
+    ];
 
     private function hit(string $method, string $path)
     {
@@ -103,12 +135,16 @@ class AdminRoutesTest extends TestCase
         $service = Service::factory()->create();
         $consultant = Consultant::factory()->create();
         $page = Page::factory()->create();
+        $post = BlogPost::factory()->create();
+        $category = Category::factory()->create();
+        $tag = Tag::factory()->create();
 
         // Invalid/empty payloads: the point is authorization, not success.
         $uri = strtr($path, [
             ':media' => (string) $media->id, ':value' => (string) $value->id,
             ':service' => (string) $service->id, ':consultant' => (string) $consultant->id,
-            ':page' => (string) $page->id,
+            ':page' => (string) $page->id, ':post' => (string) $post->id,
+            ':category' => (string) $category->id, ':tag' => (string) $tag->id,
         ]);
 
         return $this->from('/admin')->call($method, $uri, ['alt_text' => 'x']);

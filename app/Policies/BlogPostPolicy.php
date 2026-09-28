@@ -27,9 +27,9 @@ class BlogPostPolicy
     }
 
     /**
-     * Editors and above edit any post. Authors edit only their own, and only
-     * before publication: editing a live post would bypass the publish
-     * permission they don't have.
+     * Editors and above edit any post, in any status. Authors edit only
+     * their own, and only while it is still a draft: once it is submitted
+     * for review or published, it is out of their hands (stage 6B-2 brief).
      */
     public function update(User $user, BlogPost $post): bool
     {
@@ -45,8 +45,23 @@ class BlogPostPolicy
     }
 
     /**
+     * Move between draft and review without touching Published — that is
+     * `publish`. Editors (and above) move any post either way; an Author's
+     * only allowed move is their own submitForReview.
+     */
+    public function moveStatus(User $user, BlogPost $post, PostStatus $target): bool
+    {
+        if ($target === PostStatus::Published || $post->status === PostStatus::Published) {
+            return false;
+        }
+
+        return $user->hasPermission('posts.edit-any')
+            || ($target === PostStatus::Review && $this->submitForReview($user, $post));
+    }
+
+    /**
      * Editors are withheld content.publish until §7 "approved items only" is
-     * defined (plan D12).
+     * defined (plan D12). Covers both publishing and unpublishing.
      */
     public function publish(User $user, BlogPost $post): bool
     {
@@ -62,6 +77,6 @@ class BlogPostPolicy
     {
         return $user->hasPermission('posts.edit-own')
             && $post->author_id === $user->id
-            && ($anyStatus || $post->status !== PostStatus::Published);
+            && ($anyStatus || $post->status === PostStatus::Draft);
     }
 }

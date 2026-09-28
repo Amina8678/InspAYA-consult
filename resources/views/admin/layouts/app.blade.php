@@ -12,6 +12,9 @@
         ['label' => 'Services', 'route' => 'admin.services.index', 'match' => 'admin.services.*', 'show' => $user->can('viewAny', App\Models\Service::class)],
         ['label' => 'Consultants', 'route' => 'admin.consultants.index', 'match' => 'admin.consultants.*', 'show' => $user->can('viewAny', App\Models\Consultant::class)],
         ['label' => 'Core values', 'route' => 'admin.core-values.index', 'match' => 'admin.core-values.*', 'show' => $user->can('viewAny', App\Models\CoreValue::class)],
+        ['label' => 'Blog posts', 'route' => 'admin.posts.index', 'match' => 'admin.posts.*', 'show' => $user->can('viewAny', App\Models\BlogPost::class)],
+        ['label' => 'Categories', 'route' => 'admin.categories.index', 'match' => 'admin.categories.*', 'show' => $user->can('viewAny', App\Models\Category::class)],
+        ['label' => 'Tags', 'route' => 'admin.tags.index', 'match' => 'admin.tags.*', 'show' => $user->can('viewAny', App\Models\Tag::class)],
         ['label' => 'Site settings', 'route' => 'admin.settings.edit', 'match' => 'admin.settings.*', 'show' => $user->can('settings.manage')],
     ], fn (array $item) => $item['show']));
 @endphp
