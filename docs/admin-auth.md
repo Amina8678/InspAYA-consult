@@ -16,23 +16,24 @@ All text is plain text: output with `{{ }}`, never `{!! !!}`. Every form needs
 
 | Page | URL | Route name | View | Form posts to | Fields |
 |---|---|---|---|---|---|
-| Sign in | `GET /admin/login` | `admin.login` | `auth.admin-login` (exists) | `admin.login.submit` | `email`, `password`, `remember` (checkbox) |
+| Sign in | `GET /admin/login` | `admin.login` | `admin.auth.login` | `admin.login.submit` | `email`, `password`, `remember` (checkbox) |
 | Forgot password | `GET /admin/forgot-password` | `admin.password.request` | `admin.auth.forgot-password` | `admin.password.email` | `email` |
 | Reset password | `GET /admin/reset-password/{token}` | `admin.password.reset` | `admin.auth.reset-password` | `admin.password.store` | `token` (hidden, from `$token`), `email` (prefill from `$email`), `password`, `password_confirmation` |
 | Sign out | — | `admin.logout` | — | `POST` only | none (a button in a form, never a link) |
-| Change own password | (form on any admin page) | `admin.account.password.update` | — | `PUT` (`@method('PUT')`) | `current_password`, `password`, `password_confirmation`; errors are in the `updatePassword` bag: `$errors->updatePassword` |
+| Change own password | `GET /admin/account/password` | `admin.account.password.edit` | `admin.account.password` | `admin.account.password.update`, `PUT` (`@method('PUT')`) | `current_password`, `password`, `password_confirmation`; errors are in the `updatePassword` bag: `$errors->updatePassword` |
 
 Messages the pages should show:
 
 - **Sign in failure:** `$errors->first('email')`. It is deliberately the same
   for a wrong password, an unknown email and a deactivated account.
 - **Too many attempts:** the server answers **429** with a `Retry-After`
-  header, and Laravel renders `resources/views/errors/429.blade.php` (or its
-  built-in page). Say "Too many attempts, try again in a minute".
+  header. Admin requests (sign-in, password reset) render `admin.errors.429`,
+  which receives `$retryAfter` (seconds, or null); public requests keep the
+  public `errors/429` page.
 - **Forgot password:** always the same `session('status')` message, whether or
   not the email has an account.
 - **After a reset:** the user lands on the sign-in page with `session('status')`.
-- **After changing password:** `session('status') === 'password-updated'`.
+- **After changing password:** redirect to the change-password page with `session('status')` set to "Your password has been changed."
 
 Signed-in users who open the sign-in or reset pages are sent to the dashboard.
 
