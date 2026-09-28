@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title') | {{ config('app.name') }} CMS</title>
-    <link rel="stylesheet" href="{{ asset('admin/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin-assets/admin.css') }}">
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to main content</a>
@@ -21,6 +21,6 @@
         </div>
     </main>
 
-    <script src="{{ asset('admin/admin.js') }}" defer></script>
+    <script src="{{ asset('admin-assets/admin.js') }}" defer></script>
 </body>
 </html>

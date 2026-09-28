@@ -116,6 +116,24 @@ class AdminRoutesTest extends TestCase
         }
     }
 
+    /**
+     * A directory in public/ named like a route's first segment is served by
+     * the web server instead of the app (e.g. public/admin shadowing /admin).
+     */
+    public function test_no_public_directory_shadows_a_route(): void
+    {
+        $segments = collect(Route::getRoutes()->getRoutes())
+            ->map(fn ($route) => explode('/', $route->uri())[0])
+            // "storage": Laravel's own file route, which the public/storage
+            // link is meant to take over.
+            ->reject(fn ($segment) => $segment === '' || $segment === 'storage' || str_starts_with($segment, '{'))
+            ->unique();
+
+        foreach ($segments as $segment) {
+            $this->assertDirectoryDoesNotExist(public_path($segment), "public/{$segment} would shadow the /{$segment} routes");
+        }
+    }
+
     public function test_no_routes_for_removed_modules_remain(): void
     {
         foreach (['admin.services.index', 'admin.team.index', 'admin.projects.index', 'admin.blog.index', 'admin.pricing.index', 'admin.settings.edit'] as $name) {
