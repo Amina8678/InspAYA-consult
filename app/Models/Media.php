@@ -83,6 +83,14 @@ class Media extends Model
     }
 
     /**
+     * @return HasMany<Page, $this>
+     */
+    public function pagesAsOgImage(): HasMany
+    {
+        return $this->hasMany(Page::class, 'og_image_id');
+    }
+
+    /**
      * @return HasMany<SiteSetting, $this>
      */
     public function siteSettings(): HasMany

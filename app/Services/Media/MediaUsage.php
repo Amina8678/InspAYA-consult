@@ -39,6 +39,10 @@ class MediaUsage
             $usages[] = ['type' => 'site_setting', 'id' => $setting->id, 'label' => $setting->key, 'field' => 'Setting image'];
         }
 
+        foreach (Page::where('og_image_id', $media->id)->get(['id', 'title']) as $page) {
+            $usages[] = ['type' => 'page', 'id' => $page->id, 'label' => $page->title, 'field' => 'Sharing image'];
+        }
+
         foreach ($this->pagesUsing($media) as [$page, $locations]) {
             foreach ($locations as $location) {
                 $usages[] = ['type' => 'page', 'id' => $page->id, 'label' => $page->title, 'field' => $location];
@@ -57,6 +61,7 @@ class MediaUsage
         Consultant::where('photo_id', $media->id)->update(['photo_id' => null]);
         CoreValue::where('icon_id', $media->id)->update(['icon_id' => null]);
         SiteSetting::where('media_id', $media->id)->update(['media_id' => null]);
+        Page::where('og_image_id', $media->id)->update(['og_image_id' => null]);
 
         foreach ($this->pagesUsing($media) as [$page]) {
             $page->structured_content = collect($page->structured_content)

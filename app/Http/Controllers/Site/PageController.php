@@ -95,11 +95,11 @@ class PageController extends Controller
 
     private function publishedPage(string $slug): ?Page
     {
-        return Page::query()->published()->where('slug', $slug)->first();
+        return Page::query()->published()->with('ogImage')->where('slug', $slug)->first();
     }
 
     private function publishedPageOrFail(string $slug): Page
     {
-        return Page::query()->published()->where('slug', $slug)->firstOrFail();
+        return Page::query()->published()->with('ogImage')->where('slug', $slug)->firstOrFail();
     }
 }

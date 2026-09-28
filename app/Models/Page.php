@@ -8,6 +8,7 @@ use Database\Factories\PageFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * structured_content is an ordered list of section blocks:
@@ -27,6 +28,7 @@ class Page extends Model
         'meta_title',
         'meta_description',
         'canonical_url',
+        'og_image_id',
         'published_at',
     ];
 
@@ -59,5 +61,15 @@ class Page extends Model
         $query->where('status', PageStatus::Published)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now());
+    }
+
+    /**
+     * Sharing image for this page (NFR-SEO-04); SET NULL when the media goes.
+     *
+     * @return BelongsTo<Media, $this>
+     */
+    public function ogImage(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'og_image_id');
     }
 }

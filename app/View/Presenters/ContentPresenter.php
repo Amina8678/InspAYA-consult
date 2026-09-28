@@ -81,7 +81,9 @@ class ContentPresenter
                 $page->meta_title ?: $this->pageTitle($page->title),
                 $page->meta_description,
                 $page->canonical_url ?: $url,
-                $firstImage,
+                // The page's own sharing image, else the first section image,
+                // else (inside seo()) the site default.
+                MediaPresenter::present($page->ogImage) ?? $firstImage,
             ),
         ];
     }
