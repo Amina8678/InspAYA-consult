@@ -510,8 +510,9 @@ main:focus {
   resize: vertical;
 }
 
-.field--error input,
-.field--error textarea {
+/* Same specificity as the base field rule above, so this wins by order. */
+.field--error input[type],
+.field.field--error textarea {
   border-color: var(--color-error);
 }
 

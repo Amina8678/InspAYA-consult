@@ -1,9 +1,15 @@
 /*
  * InspAya Consult: small progressive enhancements. The site works fully
- * without JavaScript; this only adds the "Copy link" button (FR-BLOG-05).
+ * without JavaScript; this adds the "Copy link" button (FR-BLOG-05) and moves
+ * focus to a form's error summary after a failed submission.
  */
 (function () {
   'use strict';
+
+  var summary = document.getElementById('error-summary');
+  if (summary) {
+    summary.focus();
+  }
 
   document.querySelectorAll('[data-copy-url]').forEach(function (button) {
     if (!navigator.clipboard) {
