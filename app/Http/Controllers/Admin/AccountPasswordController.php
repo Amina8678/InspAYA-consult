@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Support\AuditLogger;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,14 @@ use Illuminate\Validation\Rules\Password;
  */
 class AccountPasswordController extends Controller
 {
+    public const UPDATED_MESSAGE = 'Your password has been changed.';
+
     public function __construct(private AuditLogger $audit) {}
+
+    public function edit(): View
+    {
+        return view('admin.account.password');
+    }
 
     public function update(Request $request): RedirectResponse
     {
@@ -36,6 +44,6 @@ class AccountPasswordController extends Controller
 
         $this->audit->record(AuditLogger::PASSWORD_CHANGED, $user, $user);
 
-        return back()->with('status', 'password-updated');
+        return redirect()->route('admin.account.password.edit')->with('status', self::UPDATED_MESSAGE);
     }
 }

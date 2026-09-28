@@ -51,14 +51,17 @@ class PasswordTest extends TestCase
     {
         $user = User::factory()->create(['password' => self::OLD]);
 
-        $this->actingAs($user)->from('/admin')
+        $this->actingAs($user)
             ->put(route('admin.account.password.update'), [
                 'current_password' => self::OLD,
                 'password' => self::NEW,
                 'password_confirmation' => self::NEW,
             ])
-            ->assertRedirect('/admin')
-            ->assertSessionHas('status', 'password-updated');
+            ->assertRedirect(route('admin.account.password.edit'))
+            ->assertSessionHas('status', \App\Http\Controllers\Admin\AccountPasswordController::UPDATED_MESSAGE);
+
+        $this->get(route('admin.account.password.edit'))->assertOk()
+            ->assertSee(\App\Http\Controllers\Admin\AccountPasswordController::UPDATED_MESSAGE);
 
         $this->assertTrue(Hash::check(self::NEW, $user->fresh()->password));
         $this->assertAuthenticatedAs($user);

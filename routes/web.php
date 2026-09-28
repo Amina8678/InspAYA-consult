@@ -67,6 +67,7 @@ Route::post('/admin/logout', [AdminLoginController::class, 'logout'])
 Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('/account/password', [AccountPasswordController::class, 'edit'])->name('account.password.edit');
     Route::put('/account/password', [AccountPasswordController::class, 'update'])->name('account.password.update');
 
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
