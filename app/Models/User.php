@@ -63,6 +63,60 @@ class User extends Authenticatable
     }
 
     /**
+     * Permission slugs for the current role, remembered on this instance only
+     * (i.e. for one request). Never cached across requests, so a role or
+     * permission change applies on the user's next request.
+     *
+     * @var array{role_id: int|null, slugs: list<string>}|null
+     */
+    private ?array $permissionSlugs = null;
+
+    public function hasPermission(string $slug): bool
+    {
+        return in_array($slug, $this->permissionSlugs(), true);
+    }
+
+    public function hasRole(string $slug): bool
+    {
+        return $this->currentRole()?->slug === $slug;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('super-admin');
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function permissionSlugs(): array
+    {
+        if ($this->permissionSlugs === null || $this->permissionSlugs['role_id'] !== $this->role_id) {
+            $this->permissionSlugs = [
+                'role_id' => $this->role_id,
+                'slugs' => $this->currentRole()?->permissions->pluck('slug')->all() ?? [],
+            ];
+        }
+
+        return $this->permissionSlugs['slugs'];
+    }
+
+    /**
+     * The role matching role_id, reloaded if role_id changed on this instance.
+     */
+    private function currentRole(): ?Role
+    {
+        if (! $this->relationLoaded('role') || $this->getRelation('role')?->getKey() !== $this->role_id) {
+            $this->load('role.permissions');
+        }
+
+        $role = $this->getRelation('role');
+        $role?->loadMissing('permissions');
+
+        return $role;
+    }
+
+    /**
      * Queued admin reset email instead of Laravel's synchronous default.
      */
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void

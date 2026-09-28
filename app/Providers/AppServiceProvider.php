@@ -22,7 +22,9 @@ use App\View\Composers\SiteLayoutComposer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\View;
+use App\Enums\UserStatus;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -58,6 +60,19 @@ class AppServiceProvider extends ServiceProvider
         // resets). The SRS defines none beyond hashing (NFR-SEC-01); see
         // docs/admin-auth.md.
         Password::defaults(fn () => Password::min(12)->letters()->mixedCase()->numbers()->symbols());
+
+        // Every permission slug is a Gate ability (e.g. Gate::allows('posts.create'),
+        // @can('media.upload'), `permission:` middleware), answered from the
+        // permissions tables via the user's role. Unknown slugs are denied.
+        // Inactive accounts are denied everything, including policy checks.
+        // Other abilities (update, publish, …) fall through to the policies.
+        Gate::before(function (User $user, string $ability) {
+            if ($user->status !== UserStatus::Active) {
+                return false;
+            }
+
+            return Permission::isSlug($ability) ? $user->hasPermission($ability) : null;
+        });
 
         // Reset emails link to the admin reset page (there is no public one).
         ResetPassword::createUrlUsing(fn (User $user, string $token) => route('admin.password.reset', [
