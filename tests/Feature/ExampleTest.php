@@ -15,7 +15,8 @@ class ExampleTest extends TestCase
     public function test_the_application_returns_a_successful_response(): void
     {
         $this->markTestSkipped(
-            'PageController still uses models removed by the schema rebuild; re-enable at controller rewrite step.'
+            'Controller is done (covered with stub views in tests/Feature/Site); re-enable once the frontend '
+            .'adds resources/views/public/home.blade.php.'
         );
 
         $response = $this->get('/');
