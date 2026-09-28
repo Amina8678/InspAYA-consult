@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\AccountPasswordController;
 use App\Http\Controllers\Admin\ConsultantController as AdminConsultantController;
 use App\Http\Controllers\Admin\CoreValueController as AdminCoreValueController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Auth\AdminLoginController;
@@ -77,6 +78,16 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::put('/media/{media}', [MediaController::class, 'update'])->middleware('can:update,media')->name('media.update');
     Route::get('/media/{media}/delete', [MediaController::class, 'confirmDelete'])->middleware('can:delete,media')->name('media.delete');
     Route::delete('/media/{media}', [MediaController::class, 'destroy'])->middleware('can:delete,media')->name('media.destroy');
+
+    // Pages (FR-ADM-04). Editors: list and edit content (drafts);
+    // Admin+: create, delete; publishing needs content.publish (plan §6, D12).
+    Route::get('/pages', [AdminPageController::class, 'index'])->middleware('permission:pages.edit|pages.manage')->name('pages.index');
+    Route::get('/pages/create', [AdminPageController::class, 'create'])->middleware('permission:pages.manage')->name('pages.create');
+    Route::post('/pages', [AdminPageController::class, 'store'])->middleware('permission:pages.manage')->name('pages.store');
+    Route::get('/pages/{page}/edit', [AdminPageController::class, 'edit'])->middleware('permission:pages.edit|pages.manage')->name('pages.edit');
+    Route::put('/pages/{page}', [AdminPageController::class, 'update'])->middleware('permission:pages.edit|pages.manage')->name('pages.update');
+    Route::get('/pages/{page}/delete', [AdminPageController::class, 'confirmDelete'])->middleware('permission:pages.manage')->name('pages.delete');
+    Route::delete('/pages/{page}', [AdminPageController::class, 'destroy'])->middleware('permission:pages.manage')->name('pages.destroy');
 
     // Services (FR-SVC, FR-ADM-05). Editors: list and edit content;
     // Admin+: create, delete, reorder, activate, assign consultants (plan §6).

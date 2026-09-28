@@ -2,12 +2,13 @@
     Labelled input with hint and error, tied together by for/id and
     aria-describedby.
     $name, $label, $type (text, email, password, file, textarea),
-    optional: $value, $required, $autocomplete, $hint, $bag, $maxlength, $accept, $id.
+    optional: $value, $required, $autocomplete, $hint, $bag, $maxlength, $accept, $id,
+    $errorKey (dot-notation key for array fields, e.g. sections.2.heading).
 --}}
 @php
     $id = $id ?? 'field-'.$name;
     $messages = $errors->getBag($bag ?? 'default');
-    $error = $messages->first($name);
+    $error = $messages->first($errorKey ?? $name);
     $required = $required ?? false;
     $hint = $hint ?? null;
     $describedBy = trim(($hint ? $id.'-hint ' : '').($error ? $id.'-error' : ''));

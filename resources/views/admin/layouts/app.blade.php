@@ -8,6 +8,7 @@
     $navItems = array_values(array_filter([
         ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'show' => true],
         ['label' => 'Media library', 'route' => 'admin.media.index', 'match' => 'admin.media.*', 'show' => $user->can('media.view')],
+        ['label' => 'Pages', 'route' => 'admin.pages.index', 'match' => 'admin.pages.*', 'show' => $user->can('viewAny', App\Models\Page::class)],
         ['label' => 'Services', 'route' => 'admin.services.index', 'match' => 'admin.services.*', 'show' => $user->can('viewAny', App\Models\Service::class)],
         ['label' => 'Consultants', 'route' => 'admin.consultants.index', 'match' => 'admin.consultants.*', 'show' => $user->can('viewAny', App\Models\Consultant::class)],
         ['label' => 'Core values', 'route' => 'admin.core-values.index', 'match' => 'admin.core-values.*', 'show' => $user->can('viewAny', App\Models\CoreValue::class)],

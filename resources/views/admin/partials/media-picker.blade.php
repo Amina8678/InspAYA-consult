@@ -3,12 +3,13 @@
     and screen-reader accessible, no JS needed) with a preview of the current
     choice. admin.js only refreshes the preview when the choice changes.
     $name, $label, $selected (media id or null), $options (MediaPicker::options),
-    optional: $hint, $id, $required.
+    optional: $hint, $id, $required, $errorKey (dot-notation key for array
+    fields, e.g. sections.2.background_media_id).
 --}}
 @php
     $id = $id ?? 'field-'.$name;
-    $error = $errors->first($name);
-    $selected = old($name, $selected);
+    $error = $errors->first($errorKey ?? $name);
+    $selected = old($errorKey ?? $name, $selected);
     $current = $options[$selected] ?? null;
     $hintId = $id.'-hint';
     $describedBy = trim($hintId.' '.($error ? $id.'-error' : ''));

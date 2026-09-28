@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\Consultant;
 use App\Models\CoreValue;
 use App\Models\Media;
+use App\Models\Page;
 use App\Models\Service;
 use App\Models\Role;
 use App\Models\User;
@@ -57,6 +58,13 @@ class AdminRoutesTest extends TestCase
             'media destroy' => ['DELETE', '/admin/media/:media', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
             'settings page' => ['GET', '/admin/settings', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'settings save' => ['PUT', '/admin/settings', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'pages list' => ['GET', '/admin/pages', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'page create page' => ['GET', '/admin/pages/create', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'page store' => ['POST', '/admin/pages', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'page edit' => ['GET', '/admin/pages/:page/edit', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'page update' => ['PUT', '/admin/pages/:page', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'page delete confirm' => ['GET', '/admin/pages/:page/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'page destroy' => ['DELETE', '/admin/pages/:page', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'services list' => ['GET', '/admin/services', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
             'service create page' => ['GET', '/admin/services/create', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'service store' => ['POST', '/admin/services', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
@@ -85,7 +93,7 @@ class AdminRoutesTest extends TestCase
     }
 
     /** Route placeholder => route parameter as registered. */
-    private const PLACEHOLDERS = [':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}'];
+    private const PLACEHOLDERS = [':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}', ':page' => '{page}'];
 
     private function hit(string $method, string $path)
     {
@@ -94,11 +102,13 @@ class AdminRoutesTest extends TestCase
         $value = CoreValue::factory()->create();
         $service = Service::factory()->create();
         $consultant = Consultant::factory()->create();
+        $page = Page::factory()->create();
 
         // Invalid/empty payloads: the point is authorization, not success.
         $uri = strtr($path, [
             ':media' => (string) $media->id, ':value' => (string) $value->id,
             ':service' => (string) $service->id, ':consultant' => (string) $consultant->id,
+            ':page' => (string) $page->id,
         ]);
 
         return $this->from('/admin')->call($method, $uri, ['alt_text' => 'x']);
