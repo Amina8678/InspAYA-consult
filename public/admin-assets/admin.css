@@ -231,7 +231,7 @@ main:focus {
   padding: var(--a-space-5);
 }
 
-.nav-toggle {
+.admin-header .nav-toggle {
   display: none;
 }
 
@@ -250,7 +250,7 @@ main:focus {
     padding: var(--a-space-4);
   }
 
-  .js .nav-toggle {
+  .js .admin-header .nav-toggle {
     display: inline-block;
   }
 
@@ -416,9 +416,12 @@ main:focus {
 
   .table td {
     display: grid;
-    grid-template-columns: 7rem 1fr;
+    /* minmax(0, …): long words (emails, file names) wrap instead of
+       widening the page at 320px. */
+    grid-template-columns: 6rem minmax(0, 1fr);
     gap: var(--a-space-2);
     border: 0;
+    overflow-wrap: anywhere;
   }
 
   .table td::before {

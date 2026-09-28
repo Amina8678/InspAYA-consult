@@ -62,34 +62,38 @@
                 <tbody>
                     @foreach ($media as $item)
                         <tr>
-                            <td data-label="Preview">
+                            <td data-label="Preview"><div>
                                 @if (str_starts_with($item->mime_type, 'image/'))
                                     <img class="thumb" src="{{ Storage::disk($item->disk)->url($item->storage_path) }}"
                                          alt="{{ $item->alt_text }}" width="80" height="80" loading="lazy">
                                 @else
                                     <span class="file-badge" aria-hidden="true">PDF</span>
                                 @endif
+                                </div>
                             </td>
-                            <td data-label="File">
+                            <td data-label="File"><div>
                                 <strong>{{ $item->file_name }}</strong>
                                 @if ($item->alt_text)
                                     <br><span class="muted small">Alt: {{ $item->alt_text }}</span>
                                 @elseif (str_starts_with($item->mime_type, 'image/'))
                                     <br><span class="muted small">No alt text</span>
                                 @endif
+                                </div>
                             </td>
-                            <td data-label="Details" class="small">
+                            <td data-label="Details" class="small"><div>
                                 {{ $item->mime_type }}<br>
                                 {{ Illuminate\Support\Number::fileSize($item->size, 1) }}
                                 @if ($item->width && $item->height)
                                     <br>{{ $item->width }} × {{ $item->height }} px
                                 @endif
+                                </div>
                             </td>
-                            <td data-label="Uploaded" class="small">
+                            <td data-label="Uploaded" class="small"><div>
                                 <time datetime="{{ $item->created_at->toIso8601String() }}">{{ $item->created_at->format('j M Y') }}</time>
                                 <br>{{ $item->uploader?->name ?? 'Unknown' }}
+                                </div>
                             </td>
-                            <td data-label="Actions">
+                            <td data-label="Actions"><div>
                                 <div class="actions">
                                     @can('update', $item)
                                         <a href="{{ route('admin.media.edit', $item) }}">Edit<span class="visually-hidden"> {{ $item->file_name }}</span></a>
@@ -97,6 +101,7 @@
                                     @can('delete', $item)
                                         <a href="{{ route('admin.media.delete', $item) }}">Delete<span class="visually-hidden"> {{ $item->file_name }}</span></a>
                                     @endcan
+                                </div>
                                 </div>
                             </td>
                         </tr>
