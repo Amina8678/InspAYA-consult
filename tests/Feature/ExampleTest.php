@@ -14,11 +14,6 @@ class ExampleTest extends TestCase
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $this->markTestSkipped(
-            'Controller is done (covered with stub views in tests/Feature/Site); re-enable once the frontend '
-            .'adds resources/views/public/home.blade.php.'
-        );
-
         $response = $this->get('/');
 
         $response->assertStatus(200);
