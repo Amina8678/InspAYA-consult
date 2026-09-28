@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Database;
 
+use App\Enums\PageStatus;
 use App\Models\BlogPost;
 use App\Models\Consultant;
 use App\Models\CoreValue;
@@ -12,7 +13,9 @@ use App\Models\Role;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\User;
+use Database\Seeders\CoreValueSeeder;
 use Database\Seeders\DatabaseSeeder;
+use Database\Seeders\PageShellSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceSeeder;
 use Database\Seeders\SiteSettingsSeeder;
@@ -206,24 +209,72 @@ class SeederTest extends TestCase
         $this->assertStringNotContainsString('asset/images', json_encode(Page::pluck('structured_content')));
 
         $this->assertSame(0, Page::whereIn('slug', ['privacy-policy', 'terms-of-service'])->where('status', 'published')->count());
+        $this->assertSame(0, Page::whereNull('structured_content')->count(), 'Demo pages carry placeholder content, not empty shells.');
     }
 
-    public function test_production_seeds_no_demo_content(): void
+    public function test_core_values_are_seeded_in_every_environment(): void
+    {
+        foreach (['local', 'production'] as $environment) {
+            $this->app->detectEnvironment(fn () => $environment);
+            $this->seedAsDeploy();
+
+            $this->assertSame(CoreValueSeeder::VALUES, CoreValue::orderBy('sort_order')->pluck('title')->all(), $environment);
+            CoreValue::all()->each(fn (CoreValue $value) => $this->assertStringContainsString('[PLACEHOLDER]', $value->description));
+        }
+    }
+
+    public function test_production_seeds_required_data_and_empty_page_shells_only(): void
     {
         $this->app->detectEnvironment(fn () => 'production');
         $this->assertTrue(app()->isProduction());
 
-        // Production requires --force, as a real deploy would pass.
-        $this->artisan('db:seed', ['--class' => DatabaseSeeder::class, '--force' => true])->assertSuccessful();
+        $this->seedAsDeploy();
 
         $this->assertSame(4, Role::count());
         $this->assertSame(1, User::count());
         $this->assertSame(7, Service::count());
+        $this->assertSame(6, CoreValue::count());
         $this->assertGreaterThan(0, SiteSetting::count());
 
-        foreach (['core_values', 'pages', 'consultants', 'service_consultant', 'categories', 'tags', 'blog_posts', 'blog_post_tag'] as $table) {
+        foreach (['consultants', 'service_consultant', 'categories', 'tags', 'blog_posts', 'blog_post_tag', 'media'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }
+    }
+
+    public function test_production_pages_are_empty_draft_shells(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $this->seedAsDeploy();
+
+        $this->assertEqualsCanonicalizing(array_keys(PageShellSeeder::PAGES), Page::pluck('slug')->all());
+        Page::all()->each(function (Page $page) {
+            $this->assertSame(PageStatus::Draft, $page->status, $page->slug);
+            $this->assertNull($page->structured_content, $page->slug);
+            $this->assertNull($page->published_at, $page->slug);
+            $this->assertNull($page->meta_title, $page->slug);
+            $this->assertNull($page->meta_description, $page->slug);
+        });
+    }
+
+    public function test_production_seed_is_idempotent(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $this->seedAsDeploy();
+        $first = $this->rowCounts();
+        $this->seedAsDeploy();
+
+        $this->assertSame($first, $this->rowCounts());
+    }
+
+    /**
+     * Seed through the console, as a deploy would. Production requires
+     * --force; it is harmless elsewhere.
+     */
+    private function seedAsDeploy(): void
+    {
+        $this->artisan('db:seed', ['--class' => DatabaseSeeder::class, '--force' => true])->assertSuccessful();
     }
 
     /**
