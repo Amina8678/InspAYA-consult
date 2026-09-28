@@ -13,7 +13,13 @@
             <h2 id="alerts-heading">Needs attention</h2>
             <ul>
                 @foreach ($alerts as $alert)
-                    <li>{{ $alert }}</li>
+                    <li>
+                        @if (is_array($alert))
+                            <a href="{{ $alert['url'] }}">{{ $alert['message'] }}</a>
+                        @else
+                            {{ $alert }}
+                        @endif
+                    </li>
                 @endforeach
             </ul>
         </section>
@@ -62,7 +68,7 @@
                     <ul>
                         @foreach ($recentEnquiries as $enquiry)
                             <li>
-                                {{ $enquiry->subject }}
+                                <a href="{{ route('admin.enquiries.show', $enquiry) }}">{{ $enquiry->subject }}</a>
                                 <span class="muted small">
                                     from {{ $enquiry->name }} ({{ str($enquiry->status->value)->headline() }},
                                     <time datetime="{{ $enquiry->created_at->toIso8601String() }}">{{ $enquiry->created_at->diffForHumans() }}</time>)

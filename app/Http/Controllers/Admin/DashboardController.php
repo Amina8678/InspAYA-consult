@@ -96,12 +96,24 @@ class DashboardController extends Controller
 
     /**
      * System alerts (FR-ADM-01), shown only to people who can act on them.
+     * A plain string is shown as text; ['message', 'url'] is shown as a link
+     * (e.g. into the enquiry inbox).
      *
-     * @return list<string>
+     * @return list<string|array{message: string, url: string}>
      */
     private function alerts(User $user): array
     {
         $alerts = [];
+
+        if ($user->can('enquiries.view')) {
+            $new = ContactSubmission::where('status', EnquiryStatus::New)->count();
+            if ($new > 0) {
+                $alerts[] = [
+                    'message' => "{$new} new ".str('enquiry')->plural($new).' awaiting a response.',
+                    'url' => route('admin.enquiries.index', ['status' => 'new']),
+                ];
+            }
+        }
 
         if ($user->can('pages.manage') || $user->can('content.publish')) {
             $published = Page::query()->published()->whereIn('slug', ['privacy-policy', 'terms-of-service'])->pluck('slug');

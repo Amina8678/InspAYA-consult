@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\AccountPasswordController;
 use App\Http\Controllers\Admin\BlogPostController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ConsultantController as AdminConsultantController;
+use App\Http\Controllers\Admin\ContactSubmissionController;
+use App\Http\Controllers\Admin\ContactSubmissionNoteController;
 use App\Http\Controllers\Admin\CoreValueController as AdminCoreValueController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
@@ -153,6 +155,23 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::put('/tags/{tag}', [TagController::class, 'update'])->middleware('permission:taxonomy.manage')->name('tags.update');
     Route::get('/tags/{tag}/delete', [TagController::class, 'confirmDelete'])->middleware('permission:taxonomy.manage')->name('tags.delete');
     Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->middleware('permission:taxonomy.manage')->name('tags.destroy');
+
+    // Enquiry inbox (FR-CONT-04/06, FR-ADM-10). Editors view and respond
+    // (status, notes); only Admin+ assign or delete (plan §6 rows 27-31).
+    Route::get('/enquiries', [ContactSubmissionController::class, 'index'])->middleware('permission:enquiries.view')->name('enquiries.index');
+    Route::get('/enquiries/{submission}', [ContactSubmissionController::class, 'show'])->middleware('permission:enquiries.view')->name('enquiries.show');
+    Route::put('/enquiries/{submission}', [ContactSubmissionController::class, 'update'])->middleware('permission:enquiries.respond|enquiries.assign')->name('enquiries.update');
+    Route::get('/enquiries/{submission}/delete', [ContactSubmissionController::class, 'confirmDelete'])->middleware('permission:enquiries.delete')->name('enquiries.delete');
+    Route::delete('/enquiries/{submission}', [ContactSubmissionController::class, 'destroy'])->middleware('permission:enquiries.delete')->name('enquiries.destroy');
+
+    // Internal enquiry notes (D1). Adding/editing needs enquiries.respond
+    // (ContactSubmissionNotePolicy narrows editing to the note's own
+    // author); deleting follows enquiry deletion rights (enquiries.delete).
+    Route::post('/enquiries/{submission}/notes', [ContactSubmissionNoteController::class, 'store'])->middleware('permission:enquiries.respond')->name('enquiries.notes.store');
+    Route::get('/enquiries/{submission}/notes/{note}/edit', [ContactSubmissionNoteController::class, 'edit'])->middleware('permission:enquiries.respond')->name('enquiries.notes.edit');
+    Route::put('/enquiries/{submission}/notes/{note}', [ContactSubmissionNoteController::class, 'update'])->middleware('permission:enquiries.respond')->name('enquiries.notes.update');
+    Route::get('/enquiries/{submission}/notes/{note}/delete', [ContactSubmissionNoteController::class, 'confirmDelete'])->middleware('permission:enquiries.delete')->name('enquiries.notes.delete');
+    Route::delete('/enquiries/{submission}/notes/{note}', [ContactSubmissionNoteController::class, 'destroy'])->middleware('permission:enquiries.delete')->name('enquiries.notes.destroy');
 
     // Site settings (FR-ADM-13).
     Route::get('/settings', [SiteSettingsController::class, 'edit'])->middleware('permission:settings.manage')->name('settings.edit');

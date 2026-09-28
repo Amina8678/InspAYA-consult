@@ -5,6 +5,11 @@
 --}}
 @php
     $user = auth()->user();
+    // Only counted when it will actually be shown, so a role without
+    // enquiries.view never pays for the query.
+    $canViewEnquiries = $user->can('viewAny', App\Models\ContactSubmission::class);
+    $newEnquiries = $canViewEnquiries ? App\Models\ContactSubmission::where('status', App\Enums\EnquiryStatus::New)->count() : 0;
+
     $navItems = array_values(array_filter([
         ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'show' => true],
         ['label' => 'Media library', 'route' => 'admin.media.index', 'match' => 'admin.media.*', 'show' => $user->can('media.view')],
@@ -15,6 +20,7 @@
         ['label' => 'Blog posts', 'route' => 'admin.posts.index', 'match' => 'admin.posts.*', 'show' => $user->can('viewAny', App\Models\BlogPost::class)],
         ['label' => 'Categories', 'route' => 'admin.categories.index', 'match' => 'admin.categories.*', 'show' => $user->can('viewAny', App\Models\Category::class)],
         ['label' => 'Tags', 'route' => 'admin.tags.index', 'match' => 'admin.tags.*', 'show' => $user->can('viewAny', App\Models\Tag::class)],
+        ['label' => 'Enquiries'.($newEnquiries > 0 ? " ({$newEnquiries} new)" : ''), 'route' => 'admin.enquiries.index', 'match' => 'admin.enquiries.*', 'show' => $canViewEnquiries],
         ['label' => 'Site settings', 'route' => 'admin.settings.edit', 'match' => 'admin.settings.*', 'show' => $user->can('settings.manage')],
     ], fn (array $item) => $item['show']));
 @endphp

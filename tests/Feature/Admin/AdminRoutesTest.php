@@ -5,6 +5,8 @@ namespace Tests\Feature\Admin;
 use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\Consultant;
+use App\Models\ContactSubmission;
+use App\Models\ContactSubmissionNote;
 use App\Models\CoreValue;
 use App\Models\Media;
 use App\Models\Page;
@@ -118,13 +120,26 @@ class AdminRoutesTest extends TestCase
             'tag update' => ['PUT', '/admin/tags/:tag', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
             'tag delete confirm' => ['GET', '/admin/tags/:tag/delete', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
             'tag destroy' => ['DELETE', '/admin/tags/:tag', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'enquiries list' => ['GET', '/admin/enquiries', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'enquiry show' => ['GET', '/admin/enquiries/:submission', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'enquiry update' => ['PUT', '/admin/enquiries/:submission', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'enquiry delete confirm' => ['GET', '/admin/enquiries/:submission/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'enquiry destroy' => ['DELETE', '/admin/enquiries/:submission', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'enquiry note store' => ['POST', '/admin/enquiries/:submission/notes', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            // Editing/updating a note nobody here authored is refused for
+            // every role, including Super Admin: ContactSubmissionNotePolicy
+            // requires authorship with no admin override (plan §6, item 4).
+            'enquiry note edit' => ['GET', '/admin/enquiries/:submission/notes/:note/edit', [], ['super-admin', 'administrator', 'editor', 'author', self::NONE], 200],
+            'enquiry note update' => ['PUT', '/admin/enquiries/:submission/notes/:note', [], ['super-admin', 'administrator', 'editor', 'author', self::NONE], 302],
+            'enquiry note delete confirm' => ['GET', '/admin/enquiries/:submission/notes/:note/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'enquiry note destroy' => ['DELETE', '/admin/enquiries/:submission/notes/:note', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
         ];
     }
 
     /** Route placeholder => route parameter as registered. */
     private const PLACEHOLDERS = [
         ':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}', ':page' => '{page}',
-        ':post' => '{post}', ':category' => '{category}', ':tag' => '{tag}',
+        ':post' => '{post}', ':category' => '{category}', ':tag' => '{tag}', ':submission' => '{submission}', ':note' => '{note}',
     ];
 
     private function hit(string $method, string $path)
@@ -138,6 +153,8 @@ class AdminRoutesTest extends TestCase
         $post = BlogPost::factory()->create();
         $category = Category::factory()->create();
         $tag = Tag::factory()->create();
+        $submission = ContactSubmission::factory()->create();
+        $note = ContactSubmissionNote::factory()->for($submission, 'submission')->create();
 
         // Invalid/empty payloads: the point is authorization, not success.
         $uri = strtr($path, [
@@ -145,6 +162,7 @@ class AdminRoutesTest extends TestCase
             ':service' => (string) $service->id, ':consultant' => (string) $consultant->id,
             ':page' => (string) $page->id, ':post' => (string) $post->id,
             ':category' => (string) $category->id, ':tag' => (string) $tag->id,
+            ':submission' => (string) $submission->id, ':note' => (string) $note->id,
         ]);
 
         return $this->from('/admin')->call($method, $uri, ['alt_text' => 'x']);
@@ -159,6 +177,15 @@ class AdminRoutesTest extends TestCase
     #[DataProvider('adminRoutes')]
     public function test_allowed_roles_get_through(string $method, string $path, array $allowed, array $denied, int $status): void
     {
+        // A route can be ownership-gated for every role (e.g. editing
+        // someone else's enquiry note): nothing here generically passes it,
+        // and that is itself the behaviour under test.
+        if ($allowed === []) {
+            $this->assertSame([], $allowed);
+
+            return;
+        }
+
         foreach ($allowed as $role) {
             $this->actingAs(User::factory()->withRole($role)->create());
 
