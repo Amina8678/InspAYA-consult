@@ -1,0 +1,65 @@
+/*
+ * InspAya Consult: theme tokens.
+ *
+ * Every colour, font and spacing value used by site.css is defined here, so
+ * final branding (SRS Appendix B) can be applied by editing this file only.
+ * Text colour pairs are checked for WCAG 2.2 AA (>= 4.5:1); keep them so when
+ * rebranding. Focus and border colours need >= 3:1 against their background.
+ */
+:root {
+  /* Colours: surfaces */
+  --color-bg: #ffffff;
+  --color-surface: #f3f5f8;
+  --color-surface-strong: #e3e8ee;
+  --color-border: #737f8b;          /* 4.1:1 on white (non-text) */
+
+  /* Colours: text */
+  --color-text: #17212b;            /* 16.3:1 on white */
+  --color-text-muted: #46525e;      /* 8.0:1 on white, 7.3:1 on surface */
+  --color-heading: #0b2a45;
+
+  /* Colours: brand */
+  --color-primary: #0b3a5d;         /* 11.8:1 on white */
+  --color-primary-hover: #072741;
+  --color-on-primary: #ffffff;
+  --color-accent: #8a5300;          /* 6.3:1 on white; small accents only */
+
+  /* Colours: header and footer */
+  --color-header-bg: #ffffff;
+  --color-footer-bg: #0b2239;
+  --color-footer-text: #dfe6ee;     /* 12.8:1 on footer */
+  --color-footer-link: #ffffff;
+
+  /* Colours: states */
+  --color-focus: #b45309;           /* focus ring: 5.0:1 on white, 3.2:1 on footer (non-text) */
+  --color-error: #a4161a;           /* 6.8:1 on its background */
+  --color-error-bg: #fdecec;
+  --color-success: #13532f;         /* 8.0:1 on its background */
+  --color-success-bg: #e5f3ea;
+
+  /* Typography: system fonts only (no remote or webfont downloads) */
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-heading: var(--font-body);
+  --font-size-base: 1.0625rem;
+  --font-size-small: 0.9375rem;
+  --font-size-lead: 1.25rem;
+  --font-size-h1: clamp(1.9rem, 1.4rem + 2.2vw, 2.9rem);
+  --font-size-h2: clamp(1.45rem, 1.2rem + 1vw, 1.9rem);
+  --font-size-h3: 1.2rem;
+  --line-height: 1.6;
+  --line-height-tight: 1.25;
+
+  /* Spacing and shape */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --container-width: 72rem;
+  --container-gutter: 1rem;
+  --radius: 6px;
+  --shadow-card: 0 1px 2px rgb(11 34 57 / 0.08), 0 2px 8px rgb(11 34 57 / 0.06);
+}
