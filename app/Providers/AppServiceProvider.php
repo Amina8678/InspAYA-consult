@@ -17,8 +17,11 @@ use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Tag;
 use App\Models\User;
+use App\Support\SiteSettings;
+use App\View\Composers\SiteLayoutComposer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -28,7 +31,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Once per request (scoped, not singleton, so long-running workers
+        // never serve stale settings).
+        $this->app->scoped(SiteSettings::class);
+        $this->app->scoped(SiteLayoutComposer::class);
     }
 
     /**
@@ -39,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
         // Fail loudly on N+1 queries outside production; views receive plain
         // arrays, so every relation must be eager loaded by the controller.
         Model::preventLazyLoading(! $this->app->isProduction());
+
+        View::composer('public.*', SiteLayoutComposer::class);
 
         // Stable aliases for audit_logs.entity_type, so stored rows don't
         // depend on PHP class names.
