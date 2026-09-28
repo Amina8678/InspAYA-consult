@@ -14,10 +14,12 @@ view the backend asks for, and exactly what data that view receives.
 
 1. **Where views live.** A view name like `public.services.show` means the file
    `resources/views/public/services/show.blade.php`.
-2. **Shared data.** Every view whose name starts with `public.` — including your
-   layouts and partials, e.g. `public.layouts.app` or `public.partials.footer` —
-   automatically receives `$settings`, `$navigation` and `$footer` (section 4).
-   Views outside `public.` do **not** get them.
+2. **Shared data.** Every view whose name starts with `public.` automatically
+   receives `$settings`, `$navigation` and `$footer` (section 4). The base
+   layout is `layouts.public` (`resources/views/layouts/public.blade.php`): it
+   receives them, and `$seo`, from the page view that `@extends` it, and
+   partials get them from whatever includes them. Error pages (`errors.*`)
+   receive none of them, so the layout falls back to defaults there.
 3. **Everything is plain data.** Variables are arrays (and one paginator), not
    database objects. Read fields with array syntax: `$service['title']`.
    Anything not listed here is not available; ask for it rather than guessing.
@@ -33,7 +35,10 @@ view the backend asks for, and exactly what data that view receives.
    block when its image is `null`.
 6. **Links.** Every item that links somewhere already carries a ready-made
    absolute `url`. Use it as-is. If you need a route in a template, the route
-   names in section 2 are also available through `route('…')`.
+   names in section 2 are also available through `route('…')`. URLs typed into
+   the CMS (consultant links, section call-to-actions, social links) only ever
+   arrive as `http(s)`, `mailto:`, `tel:` or site-relative URLs; anything else
+   (e.g. `javascript:`) is removed, so the value may be `null`.
 
 ---
 
@@ -70,9 +75,6 @@ Any other shape (capitals, underscores) is a 404.
   *support* categories and tags (each article shows them), but the SRS does not
   require filtering or search pages. Categories and tags are therefore plain
   labels for now, not links.
-- **Contact form submission.** `POST /contact` (`contact.store`) still exists
-  from the old site and will be rebuilt in a later stage (consent, anti-bot,
-  storage). Do not build against its current behaviour yet.
 - Testimonials, FAQs and client logos (not yet confirmed by the client).
 
 ### What a 404 means
@@ -354,7 +356,33 @@ Also `$seo`. For share and copy-link buttons (FR-BLOG-05) use
 | `$page` | CMS page, **nullable** | Optional intro content; the page always renders |
 | `$seo` | SEO | |
 
-The form's fields and submission behaviour are defined in a later stage.
+#### Contact form (FR-CONT-01 to 05)
+
+`POST` to `route('contact.store')` with `@csrf`.
+
+| Field | Type | Rules |
+|---|---|---|
+| `name` | text | required, max 255 |
+| `email` | email | required, valid email, max 255 |
+| `phone` | tel | optional, max 50, digits, spaces and `+ ( ) - .` only |
+| `organization` | text | optional, max 255 |
+| `subject` | text | required, max 255 |
+| `message` | textarea | required, max 5000 |
+| `consent` | checkbox, `value="1"` | required (privacy acknowledgement, FR-CONT-02) |
+| `website` | text | **anti-bot trap: must be present, empty, and hidden** from people and assistive technology (`aria-hidden="true"` wrapper, `tabindex="-1"`, `autocomplete="off"`, positioned off-screen). Never fill or remove it. |
+
+Outcomes:
+
+- **Success:** redirect back to `/contact` with `session('status')`, shown only
+  after the enquiry is stored. Show it in an element with `role="status"`.
+- **Validation error:** redirect back with `$errors` (per field, plus
+  `$errors->first('website')` when the trap was filled) and old input
+  (`old('name')` etc.).
+- **Rate limited** (3 per minute or 10 per hour per IP): **429** page
+  (`errors/429`).
+
+The backend queues two emails: a notification to the enquiry address from
+settings, and an acknowledgement to the visitor.
 
 ### Privacy Policy / Terms of Service — `public.privacy-policy`, `public.terms-of-service`
 
