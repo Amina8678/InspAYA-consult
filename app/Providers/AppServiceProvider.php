@@ -22,7 +22,12 @@ use App\View\Composers\SiteLayoutComposer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\View;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
@@ -53,6 +58,17 @@ class AppServiceProvider extends ServiceProvider
         // resets). The SRS defines none beyond hashing (NFR-SEC-01); see
         // docs/admin-auth.md.
         Password::defaults(fn () => Password::min(12)->letters()->mixedCase()->numbers()->symbols());
+
+        // Reset emails link to the admin reset page (there is no public one).
+        ResetPassword::createUrlUsing(fn (User $user, string $token) => route('admin.password.reset', [
+            'token' => $token,
+            'email' => $user->getEmailForPasswordReset(),
+        ]));
+
+        // Forgot/reset forms: per email + IP, on top of the broker's own
+        // one-link-per-minute throttle.
+        RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute(5)
+            ->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
 
         // Stable aliases for audit_logs.entity_type, so stored rows don't
         // depend on PHP class names.

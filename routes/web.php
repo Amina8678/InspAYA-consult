@@ -7,7 +7,10 @@ use App\Http\Controllers\Site\InsightController;
 use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\ServiceController as SiteServiceController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Admin\AccountPasswordController;
 use App\Http\Controllers\Auth\AdminLoginController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\ServiceController;
@@ -41,6 +44,15 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [AdminLoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AdminLoginController::class, 'login'])->name('login.submit');
+
+    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:password-reset')
+        ->name('password.email');
+    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [NewPasswordController::class, 'store'])
+        ->middleware('throttle:password-reset')
+        ->name('password.store');
 });
 
 // Logout is POST only, so a link or image tag can't sign anyone out.
@@ -52,6 +64,8 @@ Route::post('/admin/logout', [AdminLoginController::class, 'logout'])
 // ends other sessions when a password changes.
 Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::put('/account/password', [AccountPasswordController::class, 'update'])->name('account.password.update');
 
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');

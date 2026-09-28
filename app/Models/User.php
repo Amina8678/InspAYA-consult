@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserStatus;
 use App\Models\Concerns\HasAuditTrail;
+use App\Notifications\AdminResetPassword;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -59,6 +60,14 @@ class User extends Authenticatable
             'two_factor_recovery_codes' => 'encrypted',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Queued admin reset email instead of Laravel's synchronous default.
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new AdminResetPassword($token));
     }
 
     /**
