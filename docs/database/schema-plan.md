@@ -414,10 +414,12 @@ A factory for every model.
    `.env.example` gets blank placeholders only.
 3. `SiteSettingsSeeder`: placeholder keys, `firstOrCreate`, so admin edits are never overwritten.
 4. `ServiceSeeder`: the seven Appendix A services, `firstOrCreate` by slug, placeholder copy.
-5. `CoreValueSeeder`: the six FR-VAL-01 values.
-6. `PageSeeder`: home, about, contact, privacy-policy, terms-of-service.
-7. Non-production only (D10): `CategorySeeder`, `TagSeeder`, `ConsultantSeeder`,
-   `BlogPostSeeder`. All image FKs are null, so nothing references a missing file.
+5. `CoreValueSeeder`: the six FR-VAL-01 values with placeholder descriptions, in every environment.
+6. **Production only**: `PageShellSeeder` creates home, about, privacy-policy and
+   terms-of-service as empty draft shells (no content, no SEO metadata, unpublished).
+7. **Non-production only** (D10): `Demo\PageSeeder` (the same pages plus contact, with
+   placeholder content), `Demo\ConsultantSeeder`, `Demo\BlogSeeder` (categories, tags,
+   posts). All image FKs are null, so nothing references a missing file.
 
 ---
 
@@ -530,7 +532,7 @@ scheduling and Editor approval deferred.
 - **D7.** Enquiry `ip_address` is stored. A retention/purge policy (NFR-PRIV-01) is a later task.
 - **D8.** SMTP secrets stay in `.env`, never in `site_settings`.
 - **D9.** Audit-log immutability is app-level only (model guard); DB triggers / a restricted DB user are an ops decision.
-- **D10.** Demo content (categories, tags, consultants, posts) is seeded only when `APP_ENV` ≠ `production`. Roles, Super Admin, settings, the seven services, six values and core pages are seeded everywhere.
+- **D10.** Demo content (placeholder pages, consultants, categories, tags, posts) is seeded only when `APP_ENV` ≠ `production`. Roles, Super Admin, settings, the seven services and the six core values are seeded everywhere. Production additionally gets empty draft page shells (§5).
 - **D11.** Admin-panel permission gaps (pages, taxonomy, post deletion) are mapped as in §6 rows 15, 16, 20, 21.
 - **D12.** Editors do **not** get `content.publish` until the "approved items only" rule is defined (§7). SA and Admin publish.
 
@@ -558,3 +560,27 @@ rewrite must address them:
 | F2 | New items get `order = max(order) + 1`. Two concurrent creates can read the same max and get the **same position** (race). | `Admin/{Service,BlogPost,TeamMember,Project,PricingPlan}Controller::store` | Compute and insert inside a transaction with a lock (`lockForUpdate` on the max query), or allow ties and break them by `id`. Keep "new items append at the end" behaviour on `sort_order`. |
 | F3 | `PageController::home` hard-codes a **personal Gmail address and phone number** as footer fallbacks. | `PageController::home` | Remove the fallbacks and read from `site_settings`. **Seeders must use placeholders only** (e.g. `hello@example.com`, `+000 000 0000`), never these values. |
 | F4 | Controllers and views still use `order`, `image` path columns and the removed models. | all admin controllers, `welcome.blade.php` | Already covered by §2: they break when the stage (b) schema lands, and are rewritten in step 2. |
+
+---
+
+## 12. Deployment notes
+
+- **Never run `db:seed` on production after roles have been edited.**
+  `RolesAndPermissionsSeeder` syncs every role's permissions to the matrix in
+  code (§6), so a reseed silently undoes any role changes a Super Admin made in
+  the CMS (`roles.manage`). Seed production once, at first deploy. Later
+  permission changes ship as a dedicated migration or a reviewed one-off
+  seeder, not a full reseed. (Settings, services, core values, pages and the
+  Super Admin password are never overwritten by a reseed; roles are the
+  exception.)
+- **Super Admin credentials come only from environment variables.**
+  `SUPER_ADMIN_NAME`, `SUPER_ADMIN_USERNAME`, `SUPER_ADMIN_EMAIL` and
+  `SUPER_ADMIN_PASSWORD` are read via `config/inspaya.php`. They are never
+  committed; `.env.example` holds blank placeholders only. The seeder refuses to
+  run if any is unset or the password is under 12 characters. After the first
+  login, rotate the password and remove `SUPER_ADMIN_PASSWORD` from the
+  production environment. If config is cached (`config:cache`), the value is
+  also written to `bootstrap/cache/config.php`, so re-cache after removing it.
+- Production requires `php artisan db:seed --force`. In production it seeds
+  roles, the Super Admin, settings, the seven services, the six core values and
+  empty draft page shells. No demo content.
