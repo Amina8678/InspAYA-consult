@@ -26,8 +26,6 @@ class ContactController extends Controller
     /** Hidden field that people never fill in; bots usually do. */
     public const HONEYPOT = 'website';
 
-    public function __construct(private SiteSettings $settings) {}
-
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -70,7 +68,10 @@ class ContactController extends Controller
     private function notify(ContactSubmission $submission): void
     {
         try {
-            $recipient = $this->settings->get('email.enquiry_recipient') ?: config('mail.from.address');
+            // Resolved per call: controllers are cached on their route, so a
+            // constructor-held copy could be stale under a long-running worker.
+            $settings = app(SiteSettings::class);
+            $recipient = $settings->get('email.enquiry_recipient') ?: config('mail.from.address');
 
             if ($recipient) {
                 Notification::route('mail', $recipient)->notify(new EnquiryReceived($submission));
@@ -80,7 +81,7 @@ class ContactController extends Controller
 
             Notification::route('mail', $submission->email)->notify(new EnquiryAcknowledgement(
                 $submission,
-                (string) $this->settings->get('branding.site_name', config('app.name')),
+                (string) $settings->get('branding.site_name', config('app.name')),
             ));
         } catch (Throwable $e) {
             report($e);

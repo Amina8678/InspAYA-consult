@@ -25,10 +25,7 @@ class PageController extends Controller
     /** Insights featured on the home page (FR-HOME-06). */
     private const HOME_INSIGHTS = 3;
 
-    public function __construct(
-        private ContentPresenter $presenter,
-        private SiteSettings $settings,
-    ) {}
+    public function __construct(private ContentPresenter $presenter) {}
 
     public function home(): View
     {
@@ -48,7 +45,7 @@ class PageController extends Controller
                 ->latest('published_at')->limit(self::HOME_INSIGHTS)->get()
                 ->map(fn (BlogPost $p) => $this->presenter->postSummary($p))->all(),
             'seo' => $presented['seo']
-                ?? $this->presenter->seo($this->settings->get('seo.default_title'), canonicalUrl: route('home')),
+                ?? $this->presenter->seo(app(SiteSettings::class)->get('seo.default_title'), canonicalUrl: route('home')),
         ]);
     }
 

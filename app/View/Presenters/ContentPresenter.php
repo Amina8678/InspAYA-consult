@@ -22,7 +22,15 @@ use Illuminate\Support\Str;
  */
 class ContentPresenter
 {
-    public function __construct(private SiteSettings $settings) {}
+    /**
+     * Settings are resolved per call, never held: controllers (and this
+     * presenter inside them) are cached on their route, so a stored copy
+     * would go stale under a long-running worker.
+     */
+    private function settings(): SiteSettings
+    {
+        return app(SiteSettings::class);
+    }
 
     /**
      * SEO block for any public page (NFR-SEO-01/03/04).
@@ -32,13 +40,13 @@ class ContentPresenter
      */
     public function seo(?string $title, ?string $description = null, ?string $canonicalUrl = null, ?array $ogImage = null): array
     {
-        $siteName = (string) $this->settings->get('branding.site_name', config('app.name'));
+        $siteName = (string) $this->settings()->get('branding.site_name', config('app.name'));
 
         return [
             'title' => $title === null || $title === '' ? $siteName : $title,
-            'description' => $description ?: $this->settings->get('seo.default_description'),
+            'description' => $description ?: $this->settings()->get('seo.default_description'),
             'canonical_url' => $canonicalUrl ?: url()->current(),
-            'og_image' => $ogImage ?? $this->settings->get('seo.default_og_image'),
+            'og_image' => $ogImage ?? $this->settings()->get('seo.default_og_image'),
         ];
     }
 
@@ -47,7 +55,7 @@ class ContentPresenter
      */
     public function pageTitle(string $title): string
     {
-        return $title.' | '.$this->settings->get('branding.site_name', config('app.name'));
+        return $title.' | '.$this->settings()->get('branding.site_name', config('app.name'));
     }
 
     /**
