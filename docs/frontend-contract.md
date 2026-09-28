@@ -202,15 +202,22 @@ Each **section** is `{type, data}`. `type` is a short name chosen in the CMS;
 `data` holds that section's fields. Any image inside a section arrives as an
 image (or `null`) under a key ending in `_media`, e.g. `background_media`.
 
-Section types currently used by the seeded content (placeholders; the CMS
-editor stage will fix the final list):
+Section types, exactly as offered by the CMS page editor (`App\Support\PageSections`)
+and rendered by `public.partials.sections` and the home hero. Every field is
+optional plain text unless noted; buttons are `{label, url}` and only present
+when they have a link (links are http(s), mailto:, tel: or site paths).
 
 | `type` | `data` fields |
 |---|---|
-| `hero` | `heading`, `primary_cta` `{label, url}`, `secondary_cta` `{label, url}`, `background_media` (image, nullable) |
-| `intro` | `body` |
-| `feature` | `heading`, `body`, `background_media` (image, nullable) |
-| `text` | `heading` (optional), `body` |
+| `hero` | `heading` (≤200), `body` (≤1000), `primary_cta`, `secondary_cta`, `background_media` (image) |
+| `intro` | `heading` (≤200), `body` (≤2000) |
+| `feature` | `heading` (≤200), `body` (≤2000), `primary_cta`, `secondary_cta`, `background_media` (image) |
+| `text` | `heading` (≤200), `body` (≤10000) |
+
+On the home page the first `hero` is the page's `<h1>` banner; elsewhere a
+`hero` renders as a banner with an `<h2>`. A page's sharing image
+(`seo.og_image`) is its own chosen image, else the first section image, else
+the site default.
 
 Render unknown section types as nothing (skip them) rather than failing.
 
