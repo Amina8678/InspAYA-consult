@@ -477,6 +477,7 @@ main:focus {
 .field input[type="text"],
 .field input[type="email"],
 .field input[type="password"],
+.field input[type="url"],
 .field input[type="file"],
 .field select,
 .field textarea {

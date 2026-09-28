@@ -9,6 +9,7 @@ use App\Http\Controllers\Site\ServiceController as SiteServiceController;
 use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Admin\AccountPasswordController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -73,4 +74,8 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::put('/media/{media}', [MediaController::class, 'update'])->middleware('can:update,media')->name('media.update');
     Route::get('/media/{media}/delete', [MediaController::class, 'confirmDelete'])->middleware('can:delete,media')->name('media.delete');
     Route::delete('/media/{media}', [MediaController::class, 'destroy'])->middleware('can:delete,media')->name('media.destroy');
+
+    // Site settings (FR-ADM-13).
+    Route::get('/settings', [SiteSettingsController::class, 'edit'])->middleware('permission:settings.manage')->name('settings.edit');
+    Route::put('/settings', [SiteSettingsController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');
 });

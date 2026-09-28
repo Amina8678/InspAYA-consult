@@ -52,6 +52,8 @@ class AdminRoutesTest extends TestCase
             'media update' => ['PUT', '/admin/media/:media', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
             'media delete confirm' => ['GET', '/admin/media/:media/delete', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
             'media destroy' => ['DELETE', '/admin/media/:media', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'settings page' => ['GET', '/admin/settings', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'settings save' => ['PUT', '/admin/settings', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
         ];
     }
 
@@ -136,7 +138,7 @@ class AdminRoutesTest extends TestCase
 
     public function test_no_routes_for_removed_modules_remain(): void
     {
-        foreach (['admin.services.index', 'admin.team.index', 'admin.projects.index', 'admin.blog.index', 'admin.pricing.index', 'admin.settings.edit'] as $name) {
+        foreach (['admin.services.index', 'admin.team.index', 'admin.projects.index', 'admin.blog.index', 'admin.pricing.index'] as $name) {
             $this->assertFalse(Route::has($name), $name);
         }
     }
