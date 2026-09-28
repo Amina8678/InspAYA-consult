@@ -6,7 +6,7 @@ use App\Http\Controllers\Site\CoreValueController;
 use App\Http\Controllers\Site\InsightController;
 use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\ServiceController as SiteServiceController;
-use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Admin\AccountPasswordController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -37,8 +37,10 @@ Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/privacy-policy', [PageController::class, 'privacyPolicy'])->name('privacy-policy');
 Route::get('/terms-of-service', [PageController::class, 'termsOfService'])->name('terms-of-service');
 
-// Contact form submission: unchanged, reworked in a later stage.
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+// Contact form submission (FR-CONT), rate limited per IP.
+Route::post('/contact', [ContactController::class, 'store'])
+    ->middleware('throttle:contact')
+    ->name('contact.store');
 
 // Admin auth (guests only; signed-in users are sent to the dashboard)
 Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {

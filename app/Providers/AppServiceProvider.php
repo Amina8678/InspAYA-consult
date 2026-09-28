@@ -80,6 +80,13 @@ class AppServiceProvider extends ServiceProvider
             'email' => $user->getEmailForPasswordReset(),
         ]));
 
+        // Contact form (FR-CONT-03 anti-bot, with the honeypot): per IP, a short
+        // burst limit and an hourly cap. Exceeding either returns 429.
+        RateLimiter::for('contact', fn (Request $request) => [
+            Limit::perMinute(3)->by('contact-minute|'.$request->ip()),
+            Limit::perHour(10)->by('contact-hour|'.$request->ip()),
+        ]);
+
         // Forgot/reset forms: per email + IP, on top of the broker's own
         // one-link-per-minute throttle.
         RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute(5)
