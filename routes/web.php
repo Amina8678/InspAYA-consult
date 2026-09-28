@@ -10,6 +10,7 @@ use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Admin\AccountPasswordController;
 use App\Http\Controllers\Admin\CoreValueController as AdminCoreValueController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -75,6 +76,17 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::put('/media/{media}', [MediaController::class, 'update'])->middleware('can:update,media')->name('media.update');
     Route::get('/media/{media}/delete', [MediaController::class, 'confirmDelete'])->middleware('can:delete,media')->name('media.delete');
     Route::delete('/media/{media}', [MediaController::class, 'destroy'])->middleware('can:delete,media')->name('media.destroy');
+
+    // Services (FR-SVC, FR-ADM-05). Editors: list and edit content;
+    // Admin+: create, delete, reorder, activate, assign consultants (plan §6).
+    Route::get('/services', [AdminServiceController::class, 'index'])->middleware('permission:services.edit|services.manage')->name('services.index');
+    Route::get('/services/create', [AdminServiceController::class, 'create'])->middleware('permission:services.manage')->name('services.create');
+    Route::post('/services', [AdminServiceController::class, 'store'])->middleware('permission:services.manage')->name('services.store');
+    Route::get('/services/{service}/edit', [AdminServiceController::class, 'edit'])->middleware('permission:services.edit|services.manage')->name('services.edit');
+    Route::put('/services/{service}', [AdminServiceController::class, 'update'])->middleware('permission:services.edit|services.manage')->name('services.update');
+    Route::post('/services/{service}/move', [AdminServiceController::class, 'move'])->middleware('permission:services.manage')->name('services.move');
+    Route::get('/services/{service}/delete', [AdminServiceController::class, 'confirmDelete'])->middleware('permission:services.manage')->name('services.delete');
+    Route::delete('/services/{service}', [AdminServiceController::class, 'destroy'])->middleware('permission:services.manage')->name('services.destroy');
 
     // Core values (FR-VAL, FR-ADM-06). Editors: list and edit content;
     // Admin+: create, delete, reorder, activate (plan §6).
