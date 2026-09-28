@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ServiceRequest;
 use App\Models\Consultant;
 use App\Models\Service;
+use App\Services\Assignments\ServiceConsultantAssignments;
 use App\Services\Ordering\SortOrder;
 use App\Support\AuditLogger;
 use App\Support\Slug;
@@ -29,7 +30,11 @@ class ServiceController extends Controller
         'is_active', 'sort_order', 'meta_title', 'meta_description',
     ];
 
-    public function __construct(private AuditLogger $audit, private SortOrder $sortOrder) {}
+    public function __construct(
+        private AuditLogger $audit,
+        private SortOrder $sortOrder,
+        private ServiceConsultantAssignments $assignments,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -181,15 +186,8 @@ class ServiceController extends Controller
             return;
         }
 
-        $chosen = array_filter((array) $request->validated('consultants'), fn ($role) => $role !== 'none');
-
-        // Display order follows the consultants' own order.
-        $ordered = Consultant::query()->whereKey(array_keys($chosen))->ordered()->pluck('id');
-
-        $service->consultants()->sync($ordered->mapWithKeys(fn ($id, $index) => [$id => [
-            'is_lead' => $chosen[$id] === 'lead',
-            'sort_order' => $index + 1,
-        ]])->all());
+        // Shared with the consultants screen, so both sides of the pivot agree.
+        $this->assignments->setForService($service, (array) $request->validated('consultants'));
     }
 
     /**
@@ -197,14 +195,7 @@ class ServiceController extends Controller
      */
     private function assignmentsOf(Service $service): array
     {
-        if (! $service->exists) {
-            return [];
-        }
-
-        return $service->consultants()->get(['consultants.id'])
-            ->mapWithKeys(fn (Consultant $c) => [$c->id => $c->pivot->is_lead ? 'lead' : 'supporting'])
-            ->sortKeys()
-            ->all();
+        return $this->assignments->rolesForService($service);
     }
 
     /**
