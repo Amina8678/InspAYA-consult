@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PageStatus;
 use App\Models\Concerns\HasAuditTrail;
 use Database\Factories\PageFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -46,5 +47,17 @@ class Page extends Model
             'structured_content' => 'array',
             'published_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Publicly visible: published with a publication date that has passed.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopePublished(Builder $query): void
+    {
+        $query->where('status', PageStatus::Published)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
     }
 }

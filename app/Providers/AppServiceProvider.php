@@ -17,6 +17,7 @@ use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Tag;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Fail loudly on N+1 queries outside production; views receive plain
+        // arrays, so every relation must be eager loaded by the controller.
+        Model::preventLazyLoading(! $this->app->isProduction());
+
         // Stable aliases for audit_logs.entity_type, so stored rows don't
         // depend on PHP class names.
         Relation::enforceMorphMap([

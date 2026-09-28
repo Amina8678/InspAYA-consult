@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasAuditTrail;
+use App\Models\Concerns\Sortable;
 use Database\Factories\CoreValueFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CoreValue extends Model
 {
     /** @use HasFactory<CoreValueFactory> */
-    use HasAuditTrail, HasFactory;
+    use HasAuditTrail, HasFactory, Sortable;
 
     protected $fillable = [
         'title',

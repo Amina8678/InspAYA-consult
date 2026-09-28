@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasAuditTrail;
+use App\Models\Concerns\Sortable;
 use Database\Factories\ConsultantFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Consultant extends Model
 {
     /** @use HasFactory<ConsultantFactory> */
-    use HasAuditTrail, HasFactory;
+    use HasAuditTrail, HasFactory, Sortable;
 
     protected $fillable = [
         'name',

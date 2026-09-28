@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasAuditTrail;
+use App\Models\Concerns\Sortable;
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Service extends Model
 {
     /** @use HasFactory<ServiceFactory> */
-    use HasAuditTrail, HasFactory;
+    use HasAuditTrail, HasFactory, Sortable;
 
     protected $fillable = [
         'title',

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PostStatus;
 use App\Models\Concerns\HasAuditTrail;
 use Database\Factories\BlogPostFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -51,6 +52,19 @@ class BlogPost extends Model
             'status' => PostStatus::class,
             'published_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Publicly visible: published with a publication date that has passed.
+     * A future date (or none) keeps the post hidden.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopePublished(Builder $query): void
+    {
+        $query->where('status', PostStatus::Published)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
     }
 
     /**
