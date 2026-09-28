@@ -191,6 +191,19 @@ class SeederTest extends TestCase
         $this->assertSame('+1 555 0100', SiteSetting::where('key', 'contact.phone')->value('value'));
     }
 
+    public function test_default_og_image_setting_is_an_empty_media_setting(): void
+    {
+        $this->seed(SiteSettingsSeeder::class);
+        $this->seed(SiteSettingsSeeder::class);
+
+        $setting = SiteSetting::where('key', 'seo.default_og_image')->sole();
+
+        $this->assertSame('seo', $setting->group);
+        $this->assertSame(\App\Enums\SettingType::Media, $setting->type);
+        $this->assertNull($setting->value);
+        $this->assertNull($setting->media_id);
+    }
+
     public function test_non_production_seeds_demo_content_without_image_references(): void
     {
         $this->seed(DatabaseSeeder::class);

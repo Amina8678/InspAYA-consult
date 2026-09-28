@@ -36,6 +36,8 @@ class SiteSettingsSeeder extends Seeder
 
         ['key' => 'seo.default_title', 'group' => 'seo', 'type' => SettingType::String, 'value' => 'InspAya Consult'],
         ['key' => 'seo.default_description', 'group' => 'seo', 'type' => SettingType::Text, 'value' => '[PLACEHOLDER] Multidisciplinary corporate and advisory consulting.'],
+        // Fallback Open Graph image for pages without their own; set via media_id.
+        ['key' => 'seo.default_og_image', 'group' => 'seo', 'type' => SettingType::Media, 'value' => null],
 
         ['key' => 'analytics.tracking_id', 'group' => 'analytics', 'type' => SettingType::String, 'value' => null],
 

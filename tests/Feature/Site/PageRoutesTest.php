@@ -128,6 +128,16 @@ class PageRoutesTest extends SiteTestCase
         $this->get(route($route))->assertNotFound();
     }
 
+    public function test_default_og_image_setting_is_used_when_a_page_has_no_image(): void
+    {
+        $this->seed(SiteSettingsSeeder::class);
+        $image = Media::factory()->create();
+        \App\Models\SiteSetting::where('key', 'seo.default_og_image')->update(['media_id' => $image->id]);
+
+        $this->get(route('services.index'))->assertOk()
+            ->assertViewHas('seo', fn (array $seo) => str_ends_with($seo['og_image']['url'], $image->storage_path));
+    }
+
     public function test_contact_renders_without_a_cms_page(): void
     {
         $response = $this->get(route('contact'));

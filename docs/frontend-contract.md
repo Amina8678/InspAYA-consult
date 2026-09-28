@@ -228,6 +228,7 @@ Site-wide settings from the CMS, grouped by the part before the dot:
 | `$settings['social']['linkedin' \| 'x' \| 'facebook' \| 'instagram']` | string, nullable |
 | `$settings['seo']['default_title']` | string, nullable |
 | `$settings['seo']['default_description']` | string, nullable |
+| `$settings['seo']['default_og_image']` | image, nullable (already used as the `og_image` fallback) |
 | `$settings['analytics']['tracking_id']` | string, nullable |
 
 Settings can be missing entirely on a fresh install. Read them with a fallback,
@@ -370,5 +371,6 @@ The form's fields and submission behaviour are defined in a later stage.
 2. Whether the home page should show all active services or a curated subset.
 3. Whether category/tag archive pages are wanted (would need client confirmation;
    not required by the SRS).
-4. A default Open Graph image setting does not exist yet; until it does,
-   `og_image` is `null` on pages without their own image.
+4. The default Open Graph image (`seo.default_og_image`) is empty until an
+   image is chosen in the CMS; until then `og_image` is `null` on pages without
+   their own image.
