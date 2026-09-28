@@ -7,6 +7,7 @@
     $user = auth()->user();
     $navItems = array_values(array_filter([
         ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'show' => true],
+        ['label' => 'Media library', 'route' => 'admin.media.index', 'match' => 'admin.media.*', 'show' => $user->can('media.view')],
     ], fn (array $item) => $item['show']));
 @endphp
 <!DOCTYPE html>

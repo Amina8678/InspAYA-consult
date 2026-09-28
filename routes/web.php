@@ -8,6 +8,7 @@ use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\ServiceController as SiteServiceController;
 use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Admin\AccountPasswordController;
+use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -69,6 +70,15 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
 
     Route::get('/account/password', [AccountPasswordController::class, 'edit'])->name('account.password.edit');
     Route::put('/account/password', [AccountPasswordController::class, 'update'])->name('account.password.update');
+
+    // Media library (FR-ADM-09). Middleware enforces plan §6; the controller
+    // re-checks the same policies.
+    Route::get('/media', [MediaController::class, 'index'])->middleware('permission:media.view')->name('media.index');
+    Route::post('/media', [MediaController::class, 'store'])->middleware('permission:media.upload')->name('media.store');
+    Route::get('/media/{media}/edit', [MediaController::class, 'edit'])->middleware('can:update,media')->name('media.edit');
+    Route::put('/media/{media}', [MediaController::class, 'update'])->middleware('can:update,media')->name('media.update');
+    Route::get('/media/{media}/delete', [MediaController::class, 'confirmDelete'])->middleware('can:delete,media')->name('media.delete');
+    Route::delete('/media/{media}', [MediaController::class, 'destroy'])->middleware('can:delete,media')->name('media.destroy');
 
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
