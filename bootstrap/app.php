@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // There is no route named `login`; guests hitting admin routes go to
         // the admin login page instead of erroring.
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
+        $middleware->redirectUsersTo(fn () => route('admin.dashboard'));
+
+        $middleware->alias([
+            'active' => \App\Http\Middleware\EnsureUserIsActive::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

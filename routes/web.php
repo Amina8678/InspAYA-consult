@@ -37,13 +37,20 @@ Route::get('/terms-of-service', [PageController::class, 'termsOfService'])->name
 // Contact form submission: unchanged, reworked in a later stage.
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
-// Admin auth
-Route::get('/admin/login', [AdminLoginController::class, 'showLoginForm'])->name('admin.login');
-Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit');
-Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
+// Admin auth (guests only; signed-in users are sent to the dashboard)
+Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/login', [AdminLoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AdminLoginController::class, 'login'])->name('login.submit');
+});
 
-// Admin (protected)
-Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+// Logout is POST only, so a link or image tag can't sign anyone out.
+Route::post('/admin/logout', [AdminLoginController::class, 'logout'])
+    ->middleware('auth')
+    ->name('admin.logout');
+
+// Admin (protected). `active` signs out deactivated accounts; `auth.session`
+// ends other sessions when a password changes.
+Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
