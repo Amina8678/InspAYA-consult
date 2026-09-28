@@ -56,8 +56,10 @@ class ContentPresenter
     {
         $sections = $this->sections($page->structured_content ?? []);
         $firstImage = collect($sections)
-            ->flatMap(fn (array $section) => $section['data'])
-            ->first(fn ($value, $key) => is_array($value) && str_ends_with((string) $key, '_media'));
+            ->flatMap(fn (array $section) => collect($section['data'])
+                ->filter(fn ($value, $key) => is_array($value) && str_ends_with((string) $key, '_media'))
+                ->values())
+            ->first();
 
         return [
             'title' => $page->title,
@@ -219,11 +221,14 @@ class ContentPresenter
      */
     private function sections(array $blocks): array
     {
+        // Collected per block: several blocks can use the same key name.
         $ids = collect($blocks)
-            ->flatMap(fn ($block) => (array) ($block['data'] ?? []))
-            ->filter(fn ($value, $key) => str_ends_with((string) $key, '_media_id') && is_numeric($value))
-            ->values()
-            ->unique();
+            ->flatMap(fn ($block) => collect((array) ($block['data'] ?? []))
+                ->filter(fn ($value, $key) => str_ends_with((string) $key, '_media_id') && is_numeric($value))
+                ->values())
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
 
         $media = $ids->isEmpty() ? collect() : Media::query()->whereKey($ids->all())->get()->keyBy('id');
 
