@@ -10,13 +10,9 @@
                 <label class="form-label">Plan name</label>
                 <input type="text" name="name" class="form-control" value="{{ old('name', $item->name) }}" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-6">
                 <label class="form-label">Price (e.g. $999)</label>
                 <input type="text" name="price" class="form-control" value="{{ old('price', $item->price) }}" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Order</label>
-                <input type="number" name="order" class="form-control" value="{{ old('order', $item->order ?? 0) }}">
             </div>
             <div class="col-md-12">
                 <label class="form-label">Features (one per line)</label>

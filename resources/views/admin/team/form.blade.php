@@ -30,10 +30,6 @@
                 <label class="form-label">Instagram URL</label>
                 <input type="text" name="instagram" class="form-control" value="{{ old('instagram', $item->instagram) }}">
             </div>
-            <div class="col-md-2">
-                <label class="form-label">Order</label>
-                <input type="number" name="order" class="form-control" value="{{ old('order', $item->order ?? 0) }}">
-            </div>
         </div>
         <button class="btn btn-dark mt-4">Save</button>
         <a href="{{ route('admin.team.index') }}" class="btn btn-link">Cancel</a>

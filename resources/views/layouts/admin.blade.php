@@ -10,8 +10,9 @@
 <body class="bg-light">
     <div class="d-flex" style="min-height:100vh;">
         <nav class="p-3 text-white" style="width:230px; background:#0A1E38; flex-shrink:0;">
-            <h5 class="mb-4">InspAYA CMS</h5>
-            <div class="d-flex flex-column gap-2">
+            <!-- <h5 class="mb-4">InspAYA CMS</h5> -->
+            <img src="{{ asset($settings['logo_image']) }}" alt="Current nav logo" style="max-height:60px;">
+            <div class="d-flex flex-column gap-2 mt-4">
                 <a class="text-white text-decoration-none" href="{{ route('admin.dashboard') }}">Dashboard</a>
                 <a class="text-white text-decoration-none" href="{{ route('admin.settings.edit') }}">Theme &amp; Content</a>
                 <a class="text-white text-decoration-none" href="{{ route('admin.services.index') }}">Services</a>

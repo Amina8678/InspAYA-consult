@@ -2,28 +2,29 @@
 @section('title', 'Theme & Content')
 @section('content')
     <h2 class="mb-4">Theme &amp; Content</h2>
-    <form method="POST" action="{{ route('admin.settings.update') }}">
+    <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
         @csrf
 
         <div class="card mb-4">
             <div class="card-header fw-bold">Global</div>
             <div class="card-body row g-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label class="form-label">Site Name</label>
                     <input type="text" name="site_name" class="form-control" value="{{ $settings['site_name'] }}">
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Nav Logo Path</label>
-                    <input type="text" name="logo_image" class="form-control" value="{{ $settings['logo_image'] }}">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Footer Logo Path</label>
-                    <input type="text" name="footer_logo_image" class="form-control" value="{{ $settings['footer_logo_image'] }}">
+                <div class="col-md-6">
+                    <label class="form-label">Nav Logo</label>
+                    @if (!empty($settings['logo_image']))
+                        <div class="mb-2">
+                            <img src="{{ asset($settings['logo_image']) }}" alt="Current nav logo" style="max-height:60px;">
+                        </div>
+                    @endif
+                    <input type="file" name="logo_image" class="form-control" accept="image/*">
                 </div>
             </div>
         </div>
 
-        <div class="card mb-4">
+        <!-- <div class="card mb-4">
             <div class="card-header fw-bold">Theme Colors</div>
             <div class="card-body row g-3">
                 @foreach ([
@@ -50,7 +51,7 @@
                            class="form-control" value="{{ $settings['hero_overlay_opacity'] }}">
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <div class="card mb-4">
             <div class="card-header fw-bold">Hero Section</div>
@@ -60,8 +61,13 @@
                     <input type="text" name="hero_heading" class="form-control" value="{{ $settings['hero_heading'] }}">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Background image path</label>
-                    <input type="text" name="hero_bg_image" class="form-control" value="{{ $settings['hero_bg_image'] }}">
+                    <label class="form-label">Background image</label>
+                    @if (!empty($settings['hero_bg_image']))
+                        <div class="mb-2">
+                            <img src="{{ asset($settings['hero_bg_image']) }}" alt="Current hero background" style="max-height:80px;">
+                        </div>
+                    @endif
+                    <input type="file" name="hero_bg_image" class="form-control" accept="image/*">
                 </div>
                 <div class="col-md-12">
                     <label class="form-label">Text</label>
@@ -101,8 +107,13 @@
                     </div>
                     @if ($prefix === 'feature')
                         <div class="col-md-6">
-                            <label class="form-label">Side image path</label>
-                            <input type="text" name="feature_bg_image" class="form-control" value="{{ $settings['feature_bg_image'] }}">
+                            <label class="form-label">Side image</label>
+                            @if (!empty($settings['feature_bg_image']))
+                                <div class="mb-2">
+                                    <img src="{{ asset($settings['feature_bg_image']) }}" alt="Current feature image" style="max-height:80px;">
+                                </div>
+                            @endif
+                            <input type="file" name="feature_bg_image" class="form-control" accept="image/*">
                         </div>
                     @endif
                 </div>
@@ -123,6 +134,15 @@
                 <div class="col-md-3">
                     <label class="form-label">Phone</label>
                     <input type="text" name="footer_phone" class="form-control" value="{{ $settings['footer_phone'] }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Footer image (left)</label>
+                    @if (!empty($settings['footer_right_image']))
+                        <div class="mb-2">
+                            <img src="{{ asset($settings['footer_right_image']) }}" alt="Current footer image" style="max-height:80px;">
+                        </div>
+                    @endif
+                    <input type="file" name="footer_right_image" class="form-control" accept="image/*">
                 </div>
             </div>
         </div>

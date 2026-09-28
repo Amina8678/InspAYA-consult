@@ -15,18 +15,24 @@ class BlogPostController extends Controller
 
     public function create()
     {
-        return view('admin.blog.form', ['item' => new BlogPost()]);
+        return view('admin.blog.form', [
+            'item'      => new BlogPost(),
+            'nextOrder' => (BlogPost::max('order') ?? 0) + 1,
+        ]);
     }
 
     public function store(Request $request)
     {
-        BlogPost::create($this->validated($request));
+        $data = $this->validated($request);
+        $data['order'] = (BlogPost::max('order') ?? 0) + 1;
+
+        BlogPost::create($data);
         return redirect()->route('admin.blog.index')->with('status', 'Post created.');
     }
 
     public function edit(BlogPost $blog)
     {
-        return view('admin.blog.form', ['item' => $blog]);
+        return view('admin.blog.form', ['item' => $blog, 'nextOrder' => $blog->order]);
     }
 
     public function update(Request $request, BlogPost $blog)
@@ -47,7 +53,6 @@ class BlogPostController extends Controller
             'image'   => ['nullable', 'string', 'max:255'],
             'title'   => ['required', 'string', 'max:255'],
             'excerpt' => ['nullable', 'string'],
-            'order'   => ['nullable', 'integer'],
         ]);
     }
 }

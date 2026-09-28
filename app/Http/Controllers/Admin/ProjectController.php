@@ -15,18 +15,24 @@ class ProjectController extends Controller
 
     public function create()
     {
-        return view('admin.projects.form', ['item' => new Project()]);
+        return view('admin.projects.form', [
+            'item'      => new Project(),
+            'nextOrder' => (Project::max('order') ?? 0) + 1,
+        ]);
     }
 
     public function store(Request $request)
     {
-        Project::create($this->validated($request));
+        $data = $this->validated($request);
+        $data['order'] = (Project::max('order') ?? 0) + 1;
+
+        Project::create($data);
         return redirect()->route('admin.projects.index')->with('status', 'Project created.');
     }
 
     public function edit(Project $project)
     {
-        return view('admin.projects.form', ['item' => $project]);
+        return view('admin.projects.form', ['item' => $project, 'nextOrder' => $project->order]);
     }
 
     public function update(Request $request, Project $project)
@@ -47,7 +53,6 @@ class ProjectController extends Controller
             'image'    => ['nullable', 'string', 'max:255'],
             'title'    => ['required', 'string', 'max:255'],
             'subtitle' => ['nullable', 'string', 'max:255'],
-            'order'    => ['nullable', 'integer'],
         ]);
     }
 }

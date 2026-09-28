@@ -17,10 +17,6 @@
             <label class="form-label">Subtitle</label>
             <input type="text" name="subtitle" class="form-control" value="{{ old('subtitle', $item->subtitle) }}">
         </div>
-        <div class="mb-3">
-            <label class="form-label">Order</label>
-            <input type="number" name="order" class="form-control" value="{{ old('order', $item->order ?? 0) }}">
-        </div>
         <button class="btn btn-dark">Save</button>
         <a href="{{ route('admin.projects.index') }}" class="btn btn-link">Cancel</a>
     </form>
