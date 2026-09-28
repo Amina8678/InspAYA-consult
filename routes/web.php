@@ -8,6 +8,7 @@ use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\ServiceController as SiteServiceController;
 use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Admin\AccountPasswordController;
+use App\Http\Controllers\Admin\ConsultantController as AdminConsultantController;
 use App\Http\Controllers\Admin\CoreValueController as AdminCoreValueController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
@@ -87,6 +88,17 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::post('/services/{service}/move', [AdminServiceController::class, 'move'])->middleware('permission:services.manage')->name('services.move');
     Route::get('/services/{service}/delete', [AdminServiceController::class, 'confirmDelete'])->middleware('permission:services.manage')->name('services.delete');
     Route::delete('/services/{service}', [AdminServiceController::class, 'destroy'])->middleware('permission:services.manage')->name('services.destroy');
+
+    // Consultants (FR-TEAM, FR-ADM-07). Editors: list and edit content;
+    // Admin+: create, delete, reorder, activate, assign services (plan §6).
+    Route::get('/consultants', [AdminConsultantController::class, 'index'])->middleware('permission:consultants.edit|consultants.manage')->name('consultants.index');
+    Route::get('/consultants/create', [AdminConsultantController::class, 'create'])->middleware('permission:consultants.manage')->name('consultants.create');
+    Route::post('/consultants', [AdminConsultantController::class, 'store'])->middleware('permission:consultants.manage')->name('consultants.store');
+    Route::get('/consultants/{consultant}/edit', [AdminConsultantController::class, 'edit'])->middleware('permission:consultants.edit|consultants.manage')->name('consultants.edit');
+    Route::put('/consultants/{consultant}', [AdminConsultantController::class, 'update'])->middleware('permission:consultants.edit|consultants.manage')->name('consultants.update');
+    Route::post('/consultants/{consultant}/move', [AdminConsultantController::class, 'move'])->middleware('permission:consultants.manage')->name('consultants.move');
+    Route::get('/consultants/{consultant}/delete', [AdminConsultantController::class, 'confirmDelete'])->middleware('permission:consultants.manage')->name('consultants.delete');
+    Route::delete('/consultants/{consultant}', [AdminConsultantController::class, 'destroy'])->middleware('permission:consultants.manage')->name('consultants.destroy');
 
     // Core values (FR-VAL, FR-ADM-06). Editors: list and edit content;
     // Admin+: create, delete, reorder, activate (plan §6).

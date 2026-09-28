@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Consultant;
 use App\Models\CoreValue;
 use App\Models\Media;
 use App\Models\Service;
@@ -64,6 +65,14 @@ class AdminRoutesTest extends TestCase
             'service move' => ['POST', '/admin/services/:service/move', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'service delete confirm' => ['GET', '/admin/services/:service/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'service destroy' => ['DELETE', '/admin/services/:service', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'consultants list' => ['GET', '/admin/consultants', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'consultant create page' => ['GET', '/admin/consultants/create', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'consultant store' => ['POST', '/admin/consultants', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'consultant edit' => ['GET', '/admin/consultants/:consultant/edit', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'consultant update' => ['PUT', '/admin/consultants/:consultant', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'consultant move' => ['POST', '/admin/consultants/:consultant/move', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'consultant delete confirm' => ['GET', '/admin/consultants/:consultant/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'consultant destroy' => ['DELETE', '/admin/consultants/:consultant', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'core values list' => ['GET', '/admin/core-values', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
             'core value create page' => ['GET', '/admin/core-values/create', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'core value store' => ['POST', '/admin/core-values', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
@@ -76,7 +85,7 @@ class AdminRoutesTest extends TestCase
     }
 
     /** Route placeholder => route parameter as registered. */
-    private const PLACEHOLDERS = [':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}'];
+    private const PLACEHOLDERS = [':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}'];
 
     private function hit(string $method, string $path)
     {
@@ -84,9 +93,13 @@ class AdminRoutesTest extends TestCase
         Storage::disk('public')->put($media->storage_path, 'x');
         $value = CoreValue::factory()->create();
         $service = Service::factory()->create();
+        $consultant = Consultant::factory()->create();
 
         // Invalid/empty payloads: the point is authorization, not success.
-        $uri = strtr($path, [':media' => (string) $media->id, ':value' => (string) $value->id, ':service' => (string) $service->id]);
+        $uri = strtr($path, [
+            ':media' => (string) $media->id, ':value' => (string) $value->id,
+            ':service' => (string) $service->id, ':consultant' => (string) $consultant->id,
+        ]);
 
         return $this->from('/admin')->call($method, $uri, ['alt_text' => 'x']);
     }

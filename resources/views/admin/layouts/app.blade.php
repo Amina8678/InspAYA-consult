@@ -9,6 +9,7 @@
         ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'show' => true],
         ['label' => 'Media library', 'route' => 'admin.media.index', 'match' => 'admin.media.*', 'show' => $user->can('media.view')],
         ['label' => 'Services', 'route' => 'admin.services.index', 'match' => 'admin.services.*', 'show' => $user->can('viewAny', App\Models\Service::class)],
+        ['label' => 'Consultants', 'route' => 'admin.consultants.index', 'match' => 'admin.consultants.*', 'show' => $user->can('viewAny', App\Models\Consultant::class)],
         ['label' => 'Core values', 'route' => 'admin.core-values.index', 'match' => 'admin.core-values.*', 'show' => $user->can('viewAny', App\Models\CoreValue::class)],
         ['label' => 'Site settings', 'route' => 'admin.settings.edit', 'match' => 'admin.settings.*', 'show' => $user->can('settings.manage')],
     ], fn (array $item) => $item['show']));
