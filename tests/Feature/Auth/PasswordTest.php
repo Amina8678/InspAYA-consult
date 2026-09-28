@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\View;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -24,13 +23,6 @@ class PasswordTest extends TestCase
     private const OLD = 'Old-password-123!';
 
     private const NEW = 'New-password-456?';
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        View::getFinder()->prependLocation(base_path('tests/Fixtures/views'));
-    }
 
     /**
      * @return array<string, array{string}>

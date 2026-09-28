@@ -37,7 +37,7 @@ class AdminLoginController extends Controller
 
     public function showLoginForm(): View
     {
-        return view('auth.admin-login');
+        return view('admin.auth.login');
     }
 
     public function login(Request $request): RedirectResponse

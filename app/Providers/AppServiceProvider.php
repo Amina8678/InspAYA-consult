@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\View;
 use App\Enums\UserStatus;
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -72,6 +74,20 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return Permission::isSlug($ability) ? $user->hasPermission($ability) : null;
+        });
+
+        // Throttled admin requests (sign-in, password reset) get the admin 429
+        // page, with the Retry-After header kept. Public ones keep errors/429.
+        $this->app->make(ExceptionHandler::class)->renderable(function (ThrottleRequestsException $e, Request $request) {
+            if (! $request->is('admin', 'admin/*') || $request->expectsJson()) {
+                return null;
+            }
+
+            $retryAfter = $e->getHeaders()['Retry-After'] ?? null;
+
+            return response()->view('admin.errors.429', [
+                'retryAfter' => is_numeric($retryAfter) ? (int) $retryAfter : null,
+            ], 429, $e->getHeaders());
         });
 
         // Reset emails link to the admin reset page (there is no public one).
