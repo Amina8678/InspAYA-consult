@@ -231,7 +231,9 @@ class SeederTest extends TestCase
      */
     private function rowCounts(): array
     {
-        $tables = collect(Schema::getTableListing(schemaQualified: false))
+        // Current schema only: on MySQL the default listing spans every
+        // database on the server.
+        $tables = collect(Schema::getTableListing(Schema::getCurrentSchemaName(), schemaQualified: false))
             ->reject(fn (string $t) => $t === 'migrations')
             ->sort()
             ->values();
