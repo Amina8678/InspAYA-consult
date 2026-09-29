@@ -23,12 +23,17 @@ use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Site\CoreValueController;
 use App\Http\Controllers\Site\InsightController;
 use App\Http\Controllers\Site\PageController;
+use App\Http\Controllers\Site\SeoController;
 use App\Http\Controllers\Site\ServiceController as SiteServiceController;
 use Illuminate\Support\Facades\Route;
 
 // Slugs are lowercase words joined by single hyphens; anything else 404s
 // without touching the database. Must precede the routes it applies to.
 Route::pattern('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
+
+// Technical SEO (NFR-SEO-03).
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
 
 // Public site (read-only). URL, route name and view name share one term per
 // section, following the SRS Appendix A site map. See docs/frontend-contract.md.
