@@ -8,6 +8,7 @@ use App\Models\Consultant;
 use App\Models\CoreValue;
 use App\Models\Media;
 use App\Models\Page;
+use App\Models\Role;
 use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\Media\FileInspector;
@@ -365,7 +366,7 @@ class MediaLibraryTest extends TestCase
 
     public function test_user_without_media_permissions_is_refused(): void
     {
-        $role = \App\Models\Role::factory()->create(['slug' => 'no-media']);
+        $role = Role::factory()->create(['slug' => 'no-media']);
         $this->as('no-media');
         $media = Media::factory()->create();
 
@@ -373,5 +374,41 @@ class MediaLibraryTest extends TestCase
         $this->upload(UploadedFile::fake()->image('a.jpg'), ['alt_text' => 'x'])->assertForbidden();
         $this->get(route('admin.media.edit', $media))->assertForbidden();
         $this->assertDatabaseCount('media', 1);
+    }
+
+    /**
+     * Stage 11 item 5: confirms, rather than rebuilds, that an uploaded file
+     * can never be served as PHP by the web server. The mechanism is already
+     * covered field-by-field elsewhere in this class (extension forced from
+     * detected content, a raw PHP script rejected outright); this documents
+     * the three pillars together in one place.
+     */
+    public function test_uploaded_files_can_never_be_served_as_php(): void
+    {
+        // 1. The whitelist itself names no executable type or extension.
+        foreach (FileInspector::TYPES as $mime => $rules) {
+            $this->assertStringNotContainsString('php', $mime);
+            $this->assertNotSame('php', $rules['extension']);
+            $this->assertNotSame('phtml', $rules['extension']);
+        }
+
+        // 2. Every stored file's extension is one of that whitelist — never
+        // taken from the client's file name (already proven per-case by
+        // test_extension_comes_from_the_content_not_the_name()).
+        $this->as('administrator');
+        $this->upload(UploadedFile::fake()->createWithContent('shell.php', self::jpegBytes()), ['alt_text' => 'x'])
+            ->assertSessionHasNoErrors();
+        $safeExtensions = array_column(FileInspector::TYPES, 'extension');
+        foreach (Media::all() as $media) {
+            $this->assertContains(pathinfo($media->storage_path, PATHINFO_EXTENSION), $safeExtensions);
+        }
+
+        // 3. The public disk's real files live under storage/app/public, a
+        // directory tree of their own, never inside the application's own
+        // code (public_path() — where index.php and any future PHP file
+        // would actually be executed by the web server).
+        $publicDiskRoot = config('filesystems.disks.public.root');
+        $this->assertStringStartsNotWith(public_path(), $publicDiskRoot);
+        $this->assertStringContainsString('storage'.DIRECTORY_SEPARATOR.'app', $publicDiskRoot);
     }
 }
