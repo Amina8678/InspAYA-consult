@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\AuditLog;
 use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\Consultant;
@@ -138,6 +139,8 @@ class AdminRoutesTest extends TestCase
             'user store' => ['POST', '/admin/users', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'user edit' => ['GET', '/admin/users/:user/edit', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'user update' => ['PUT', '/admin/users/:user', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'audit logs list' => ['GET', '/admin/audit-logs', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'audit log show' => ['GET', '/admin/audit-logs/:auditLog', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
         ];
     }
 
@@ -145,7 +148,7 @@ class AdminRoutesTest extends TestCase
     private const PLACEHOLDERS = [
         ':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}', ':page' => '{page}',
         ':post' => '{post}', ':category' => '{category}', ':tag' => '{tag}', ':submission' => '{submission}', ':note' => '{note}',
-        ':user' => '{user}',
+        ':user' => '{user}', ':auditLog' => '{auditLog}',
     ];
 
     private function hit(string $method, string $path)
@@ -164,6 +167,7 @@ class AdminRoutesTest extends TestCase
         // Not a Super Admin, so any allowed role here (super-admin,
         // administrator) generically passes the target-acting-on checks.
         $targetUser = User::factory()->create();
+        $auditLog = AuditLog::factory()->create();
 
         // Invalid/empty payloads: the point is authorization, not success.
         $uri = strtr($path, [
@@ -172,7 +176,7 @@ class AdminRoutesTest extends TestCase
             ':page' => (string) $page->id, ':post' => (string) $post->id,
             ':category' => (string) $category->id, ':tag' => (string) $tag->id,
             ':submission' => (string) $submission->id, ':note' => (string) $note->id,
-            ':user' => (string) $targetUser->id,
+            ':user' => (string) $targetUser->id, ':auditLog' => (string) $auditLog->id,
         ]);
 
         return $this->from('/admin')->call($method, $uri, ['alt_text' => 'x']);

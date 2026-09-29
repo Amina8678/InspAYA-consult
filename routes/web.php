@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountPasswordController;
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BlogPostController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ConsultantController as AdminConsultantController;
@@ -188,4 +189,9 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     // Site settings (FR-ADM-13).
     Route::get('/settings', [SiteSettingsController::class, 'edit'])->middleware('permission:settings.manage')->name('settings.edit');
     Route::put('/settings', [SiteSettingsController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');
+
+    // Audit log (NFR-SEC-07, plan §6 row 32). Read-only: no create, edit or
+    // delete route, matching AuditLog's model-level immutability (D9).
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->middleware('permission:audit-logs.view')->name('audit-logs.index');
+    Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->middleware('permission:audit-logs.view')->name('audit-logs.show');
 });

@@ -23,6 +23,7 @@
         ['label' => 'Enquiries'.($newEnquiries > 0 ? " ({$newEnquiries} new)" : ''), 'route' => 'admin.enquiries.index', 'match' => 'admin.enquiries.*', 'show' => $canViewEnquiries],
         ['label' => 'Users', 'route' => 'admin.users.index', 'match' => 'admin.users.*', 'show' => $user->can('viewAny', App\Models\User::class)],
         ['label' => 'Site settings', 'route' => 'admin.settings.edit', 'match' => 'admin.settings.*', 'show' => $user->can('settings.manage')],
+        ['label' => 'Audit log', 'route' => 'admin.audit-logs.index', 'match' => 'admin.audit-logs.*', 'show' => $user->can('viewAny', App\Models\AuditLog::class)],
     ], fn (array $item) => $item['show']));
 @endphp
 <!DOCTYPE html>
