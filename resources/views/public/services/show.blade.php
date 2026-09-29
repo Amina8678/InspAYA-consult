@@ -17,7 +17,7 @@
 @endphp
 
 @push('head')
-    <script type="application/ld+json">@json($serviceSchema)</script>
+    <script type="application/ld+json" nonce="{{ $cspNonce ?? '' }}">@json($serviceSchema)</script>
 @endpush
 
 @section('content')

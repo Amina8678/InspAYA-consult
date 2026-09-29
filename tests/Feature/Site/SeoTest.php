@@ -28,7 +28,8 @@ class SeoTest extends SiteTestCase
      */
     private function jsonLd(string $html, string $type): ?array
     {
-        preg_match_all('~<script type="application/ld\+json">(.*?)</script>~s', $html, $matches);
+        // [^>]* tolerates extra attributes on the tag (e.g. the CSP nonce).
+        preg_match_all('~<script type="application/ld\+json"[^>]*>(.*?)</script>~s', $html, $matches);
 
         foreach ($matches[1] as $block) {
             $decoded = json_decode($block, true);

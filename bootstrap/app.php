@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Middleware\EnsureUserHasPermission;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\ForceHttps;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,8 +22,20 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn () => route('admin.dashboard'));
 
         $middleware->alias([
-            'active' => \App\Http\Middleware\EnsureUserIsActive::class,
-            'permission' => \App\Http\Middleware\EnsureUserHasPermission::class,
+            'active' => EnsureUserIsActive::class,
+            'permission' => EnsureUserHasPermission::class,
+        ]);
+
+        // NFR-SEC-09: on every response, public and admin alike — including a
+        // 404 for a URL that matches no route at all, which never enters the
+        // 'web' group's middleware, so this is global instead. SecurityHeaders
+        // is listed first, so it wraps ForceHttps and still runs its "after"
+        // step (adding the headers) even when ForceHttps short-circuits with a
+        // redirect. ForceHttps is a no-op outside production, so local dev and
+        // tests (both http) are unaffected.
+        $middleware->prepend([
+            SecurityHeaders::class,
+            ForceHttps::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

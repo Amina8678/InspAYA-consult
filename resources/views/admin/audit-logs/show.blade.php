@@ -77,8 +77,8 @@
                         @endphp
                         <tr>
                             <td data-label="Field"><div>{{ str($key)->headline() }}</div></td>
-                            <td data-label="Before"><div style="white-space: pre-line;">{{ $hasOld ? $render($log->old_values[$key]) : '—' }}</div></td>
-                            <td data-label="After"><div style="white-space: pre-line;">{{ $hasNew ? $render($log->new_values[$key]) : '—' }}</div></td>
+                            <td data-label="Before"><div class="pre-line">{{ $hasOld ? $render($log->old_values[$key]) : '—' }}</div></td>
+                            <td data-label="After"><div class="pre-line">{{ $hasNew ? $render($log->new_values[$key]) : '—' }}</div></td>
                         </tr>
                     @endforeach
                 </tbody>

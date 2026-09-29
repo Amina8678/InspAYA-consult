@@ -26,7 +26,7 @@
     @if ($post['published_at'])
         <meta property="article:published_time" content="{{ $post['published_at'] }}">
     @endif
-    <script type="application/ld+json">@json($articleSchema)</script>
+    <script type="application/ld+json" nonce="{{ $cspNonce ?? '' }}">@json($articleSchema)</script>
 @endpush
 
 @section('content')

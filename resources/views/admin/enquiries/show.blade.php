@@ -34,7 +34,7 @@
                 <dt>Subject</dt>
                 <dd>{{ $submission->subject }}</dd>
                 <dt>Message</dt>
-                <dd style="white-space: pre-line;">{{ $submission->message }}</dd>
+                <dd class="pre-line">{{ $submission->message }}</dd>
                 <dt>Received</dt>
                 <dd><time datetime="{{ $submission->created_at->toIso8601String() }}">{{ $submission->created_at->format('j M Y, H:i') }}</time></dd>
                 @if ($canRespond && $submission->ip_address)
@@ -112,7 +112,7 @@
             <ul class="notes">
                 @foreach ($submission->notes as $note)
                     <li class="panel">
-                        <p style="white-space: pre-line;">{{ $note->body }}</p>
+                        <p class="pre-line">{{ $note->body }}</p>
                         <p class="muted small">
                             {{ $note->user?->name ?? 'A removed user' }},
                             <time datetime="{{ $note->created_at->toIso8601String() }}">{{ $note->created_at->format('j M Y, H:i') }}</time>

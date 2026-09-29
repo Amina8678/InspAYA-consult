@@ -321,6 +321,13 @@ main:focus {
   font-size: var(--a-small);
 }
 
+/* Visitor/staff free text with line breaks (enquiry messages, notes, audit
+   log values): a class instead of a repeated inline style, so the CSP's
+   style-src needs no 'unsafe-inline' exception. */
+.pre-line {
+  white-space: pre-line;
+}
+
 .button {
   display: inline-block;
   padding: var(--a-space-2) var(--a-space-4);

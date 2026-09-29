@@ -63,7 +63,7 @@
             'telephone' => data_get($settings, 'contact.phone'),
         ]);
     @endphp
-    <script type="application/ld+json">@json($organizationSchema)</script>
+    <script type="application/ld+json" nonce="{{ $cspNonce ?? '' }}">@json($organizationSchema)</script>
     @stack('head')
 </head>
 <body>

@@ -9,7 +9,7 @@
     </div>
 
     <div class="panel">
-        <p style="white-space: pre-line;">{{ $note->body }}</p>
+        <p class="pre-line">{{ $note->body }}</p>
 
         @include('admin.partials.errors', ['fields' => ['confirm' => 'field-confirm']])
 
