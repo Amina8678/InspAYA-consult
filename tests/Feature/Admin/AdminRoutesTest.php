@@ -122,6 +122,7 @@ class AdminRoutesTest extends TestCase
             'tag delete confirm' => ['GET', '/admin/tags/:tag/delete', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
             'tag destroy' => ['DELETE', '/admin/tags/:tag', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
             'enquiries list' => ['GET', '/admin/enquiries', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'enquiry export' => ['GET', '/admin/enquiries/export', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'enquiry show' => ['GET', '/admin/enquiries/:submission', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
             'enquiry update' => ['PUT', '/admin/enquiries/:submission', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
             'enquiry delete confirm' => ['GET', '/admin/enquiries/:submission/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
@@ -139,6 +140,7 @@ class AdminRoutesTest extends TestCase
             'user store' => ['POST', '/admin/users', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'user edit' => ['GET', '/admin/users/:user/edit', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'user update' => ['PUT', '/admin/users/:user', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'user reset password' => ['POST', '/admin/users/:user/reset-password', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'audit logs list' => ['GET', '/admin/audit-logs', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'audit log show' => ['GET', '/admin/audit-logs/:auditLog', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
         ];

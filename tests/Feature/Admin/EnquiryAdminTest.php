@@ -272,6 +272,84 @@ class EnquiryAdminTest extends TestCase
             ->assertViewHas('submissions', fn ($p) => $p->count() === ContactSubmissionController::PER_PAGE);
     }
 
+    // Export (FR-ADM-10) --------------------------------------------------------
+
+    public function test_export_streams_a_csv_of_all_visible_fields_and_is_audited(): void
+    {
+        $admin = $this->as('administrator');
+        $submission = ContactSubmission::factory()->create([
+            'name' => 'Ada Example', 'email' => 'ada@example.com', 'phone' => '+1 555 0123',
+            'organization' => 'Example Ltd', 'subject' => 'Governance review', 'message' => 'Hello there',
+            'ip_address' => '192.0.2.60',
+        ]);
+
+        $csv = $this->get(route('admin.enquiries.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->streamedContent();
+
+        $this->assertStringContainsString('Ada Example', $csv);
+        $this->assertStringContainsString('ada@example.com', $csv);
+        $this->assertStringContainsString('Example Ltd', $csv);
+        $this->assertStringContainsString('Governance review', $csv);
+        $this->assertStringContainsString('Hello there', $csv);
+        // Administrator holds enquiries.respond, so IP is included here too.
+        $this->assertStringContainsString('192.0.2.60', $csv);
+        $this->assertStringContainsString('IP address', $csv, 'Column header must be present when IP is included.');
+
+        $log = AuditLog::firstWhere('action', 'exported');
+        $this->assertSame($admin->id, $log->user_id);
+        $this->assertSame(1, $log->new_values['row_count']);
+        foreach (['Ada Example', 'ada@example.com', 'Example Ltd', 'Governance review', 'Hello there'] as $personal) {
+            $this->assertStringNotContainsString($personal, json_encode($log->new_values), "Audit log must not contain \"{$personal}\".");
+        }
+    }
+
+    public function test_export_respects_the_current_search_and_status_filters(): void
+    {
+        $this->as('administrator');
+        ContactSubmission::factory()->create(['name' => 'Findable Person', 'organization' => 'Acme']);
+        ContactSubmission::factory()->closed()->create(['name' => 'Someone Else']);
+
+        $csv = $this->get(route('admin.enquiries.export', ['q' => 'Findable']))->assertOk()->streamedContent();
+        $this->assertStringContainsString('Findable Person', $csv);
+        $this->assertStringNotContainsString('Someone Else', $csv);
+
+        $csv = $this->get(route('admin.enquiries.export', ['status' => 'closed']))->assertOk()->streamedContent();
+        $this->assertStringContainsString('Someone Else', $csv);
+        $this->assertStringNotContainsString('Findable Person', $csv);
+    }
+
+    public function test_ip_address_is_excluded_from_the_export_without_enquiries_respond(): void
+    {
+        ContactSubmission::factory()->create(['name' => 'Ada Example', 'ip_address' => '192.0.2.61']);
+
+        // No seeded role holds enquiries.export without enquiries.respond
+        // (plan §6 grants them together), so this exercises the export's own
+        // gate with an ad-hoc role rather than relying on that always being
+        // true — the same defensive check the detail page already needs.
+        $role = Role::factory()->create(['slug' => 'export-only-enquiries']);
+        $role->permissions()->attach([
+            Permission::firstOrCreate(['slug' => 'enquiries.view'], ['name' => 'Enquiries View', 'group' => 'enquiries'])->id,
+            Permission::firstOrCreate(['slug' => 'enquiries.export'], ['name' => 'Enquiries Export', 'group' => 'enquiries'])->id,
+        ]);
+        $this->actingAs(User::factory()->withRole($role)->create());
+
+        $csv = $this->get(route('admin.enquiries.export'))->assertOk()->streamedContent();
+
+        $this->assertStringContainsString('Ada Example', $csv);
+        $this->assertStringNotContainsString('192.0.2.61', $csv);
+        $this->assertStringNotContainsString('IP address', $csv);
+    }
+
+    public function test_editors_and_authors_cannot_export(): void
+    {
+        foreach (['editor', 'author'] as $role) {
+            $this->as($role);
+            $this->get(route('admin.enquiries.export'))->assertForbidden();
+        }
+    }
+
     // Dashboard links ----------------------------------------------------------
 
     public function test_dashboard_links_recent_enquiries_and_the_new_enquiries_alert_to_the_inbox(): void

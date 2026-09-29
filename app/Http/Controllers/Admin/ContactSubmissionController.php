@@ -9,9 +9,11 @@ use App\Models\ContactSubmission;
 use App\Models\User;
 use App\Support\AuditLogger;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Enquiry inbox (FR-CONT-04/06, FR-ADM-10). Routes carry permission:
@@ -33,19 +35,10 @@ class ContactSubmissionController extends Controller
     {
         $this->authorize('viewAny', ContactSubmission::class);
 
-        $search = trim((string) $request->query('q'));
-        $like = '%'.addcslashes($search, '%_\\').'%';
-        $statusFilter = in_array($request->query('status'), array_column(EnquiryStatus::cases(), 'value'), true)
-            ? $request->query('status')
-            : null;
+        [$search, $statusFilter] = $this->resolveFilters($request);
 
-        $submissions = ContactSubmission::query()
+        $submissions = $this->filteredQuery($search, $statusFilter)
             ->with('assignee:id,name')
-            ->when($statusFilter !== null, fn ($q) => $q->where('status', $statusFilter))
-            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
-                ->where('name', 'like', $like)
-                ->orWhere('email', 'like', $like)
-                ->orWhere('organization', 'like', $like)))
             ->latest('created_at')
             ->latest('id')
             ->paginate(self::PER_PAGE, ['id', 'name', 'email', 'organization', 'subject', 'status', 'assigned_to', 'created_at'])
@@ -57,6 +50,72 @@ class ContactSubmissionController extends Controller
             'statusFilter' => $statusFilter,
             'statuses' => EnquiryStatus::cases(),
         ]);
+    }
+
+    /**
+     * CSV export (FR-ADM-10), respecting the same search/status filters as
+     * index(). Streamed via a cursor, never loading the whole result set into
+     * memory. IP address is included only when the exporting user also holds
+     * enquiries.respond — the same rule the detail page uses to show it — so
+     * the export never carries a field that role couldn't already see there.
+     * The export action itself is audited (who, when, how many rows); the
+     * exported data never is.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('export', ContactSubmission::class);
+
+        [$search, $statusFilter] = $this->resolveFilters($request);
+        $includeIp = $request->user()->can('enquiries.respond');
+
+        $count = $this->filteredQuery($search, $statusFilter)->count();
+
+        $this->audit->record('exported', $request->user(), null, new: [
+            'row_count' => $count,
+            'status_filter' => $statusFilter,
+            'search_applied' => $search !== '',
+        ]);
+
+        $filename = 'enquiries-'.now()->format('Y-m-d-His').'.csv';
+
+        return response()->streamDownload(function () use ($search, $statusFilter, $includeIp) {
+            $handle = fopen('php://output', 'wb');
+            // BOM so Excel opens UTF-8 names/subjects correctly.
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            $columns = ['Name', 'Email', 'Phone', 'Organization', 'Subject', 'Message', 'Status', 'Assigned to', 'Received at', 'Consent given at', 'Responded at'];
+            if ($includeIp) {
+                $columns[] = 'IP address';
+            }
+            fputcsv($handle, $columns);
+
+            $this->filteredQuery($search, $statusFilter)
+                ->with('assignee:id,name')
+                ->orderBy('created_at')
+                ->orderBy('id')
+                ->cursor()
+                ->each(function (ContactSubmission $submission) use ($handle, $includeIp) {
+                    $row = [
+                        $submission->name,
+                        $submission->email,
+                        $submission->phone,
+                        $submission->organization,
+                        $submission->subject,
+                        $submission->message,
+                        str($submission->status->value)->headline(),
+                        $submission->assignee?->name ?? 'Unassigned',
+                        $submission->created_at->toIso8601String(),
+                        $submission->consent_at->toIso8601String(),
+                        $submission->responded_at?->toIso8601String(),
+                    ];
+                    if ($includeIp) {
+                        $row[] = $submission->ip_address;
+                    }
+                    fputcsv($handle, $row);
+                });
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function show(ContactSubmission $submission): View
@@ -139,5 +198,34 @@ class ContactSubmissionController extends Controller
     private function assigneeOptions()
     {
         return User::query()->orderBy('name')->get(['id', 'name']);
+    }
+
+    /**
+     * @return array{0: string, 1: ?string} [search term, status filter]
+     */
+    private function resolveFilters(Request $request): array
+    {
+        $search = trim((string) $request->query('q'));
+        $statusFilter = in_array($request->query('status'), array_column(EnquiryStatus::cases(), 'value'), true)
+            ? $request->query('status')
+            : null;
+
+        return [$search, $statusFilter];
+    }
+
+    /**
+     * Shared by index() and export() so the export always matches what the
+     * list currently shows.
+     */
+    private function filteredQuery(string $search, ?string $statusFilter): Builder
+    {
+        $like = '%'.addcslashes($search, '%_\\').'%';
+
+        return ContactSubmission::query()
+            ->when($statusFilter !== null, fn ($q) => $q->where('status', $statusFilter))
+            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
+                ->where('name', 'like', $like)
+                ->orWhere('email', 'like', $like)
+                ->orWhere('organization', 'like', $like)));
     }
 }

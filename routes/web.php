@@ -166,6 +166,9 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     // Enquiry inbox (FR-CONT-04/06, FR-ADM-10). Editors view and respond
     // (status, notes); only Admin+ assign or delete (plan §6 rows 27-31).
     Route::get('/enquiries', [ContactSubmissionController::class, 'index'])->middleware('permission:enquiries.view')->name('enquiries.index');
+    // Must be registered before the wildcard {submission} route below, or
+    // "export" would be captured as a submission id instead.
+    Route::get('/enquiries/export', [ContactSubmissionController::class, 'export'])->middleware('permission:enquiries.export')->name('enquiries.export');
     Route::get('/enquiries/{submission}', [ContactSubmissionController::class, 'show'])->middleware('permission:enquiries.view')->name('enquiries.show');
     Route::put('/enquiries/{submission}', [ContactSubmissionController::class, 'update'])->middleware('permission:enquiries.respond|enquiries.assign')->name('enquiries.update');
     Route::get('/enquiries/{submission}/delete', [ContactSubmissionController::class, 'confirmDelete'])->middleware('permission:enquiries.delete')->name('enquiries.delete');

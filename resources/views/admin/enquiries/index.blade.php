@@ -5,6 +5,9 @@
 @section('content')
     <div class="page-head">
         <h1>Enquiries</h1>
+        @can('export', App\Models\ContactSubmission::class)
+            <a class="button" href="{{ route('admin.enquiries.export', request()->only(['q', 'status'])) }}">Export CSV</a>
+        @endcan
     </div>
 
     <section class="panel" aria-labelledby="list-heading">
