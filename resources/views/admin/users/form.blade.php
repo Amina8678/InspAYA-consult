@@ -96,4 +96,19 @@
             <button type="submit" class="button">{{ $editing ? 'Save changes' : 'Create user' }}</button>
         </div>
     </form>
+
+    @if ($editing)
+        @can('resetPassword', $targetUser)
+            <section class="panel form" aria-labelledby="reset-password-heading">
+                <h2 id="reset-password-heading">Password</h2>
+                <p class="muted small">Sends a password reset link to {{ $targetUser->email }}, the same link a user gets from "Forgot password".</p>
+                <form method="POST" action="{{ route('admin.users.reset-password', $targetUser) }}">
+                    @csrf
+                    <div class="actions">
+                        <button type="submit" class="button">Send password reset link</button>
+                    </div>
+                </form>
+            </section>
+        @endcan
+    @endif
 @endsection

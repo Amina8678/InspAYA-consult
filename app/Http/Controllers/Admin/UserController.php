@@ -67,9 +67,7 @@ class UserController extends Controller
         $user->role_id = (int) $request->validated('role_id');
         $user->save();
 
-        Password::broker()->sendResetLink(['email' => $user->email], function (User $u, #[\SensitiveParameter] string $token) {
-            $u->sendPasswordResetNotification($token);
-        });
+        $this->sendPasswordResetLink($user);
 
         $this->audit->record('created', $request->user(), $user, new: $user->only(self::AUDITED));
 
@@ -118,6 +116,27 @@ class UserController extends Controller
     }
 
     /**
+     * FR-ADM-11 "reset passwords for CMS users": the only path store() had
+     * was a link sent at account creation, with nothing for an existing,
+     * locked-out user. Reuses the exact same sendPasswordResetLink() call as
+     * store() — never a second mechanism. UserPolicy::resetPassword() allows
+     * a self-reset (no `! $actor->is($target)` check, unlike deactivate/
+     * assignRole) but, like every other user-management action, still
+     * refuses an Administrator acting on a Super Admin.
+     */
+    public function resetPassword(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('resetPassword', $user);
+
+        $this->sendPasswordResetLink($user);
+
+        $this->audit->record('password_reset_link_sent', $request->user(), $user);
+
+        return redirect()->route('admin.users.edit', $user)
+            ->with('status', 'A password reset link has been sent to '.$user->email.'.');
+    }
+
+    /**
      * A forbidden role choice (not permitted by UserPolicy::assignRole, e.g.
      * granting Super Admin, or acting on your own account) is ignored, not
      * saved — the same "ignored, not a 422" convention as every other
@@ -153,6 +172,13 @@ class UserController extends Controller
         $user->status = $target;
 
         return $target === UserStatus::Inactive;
+    }
+
+    private function sendPasswordResetLink(User $user): void
+    {
+        Password::broker()->sendResetLink(['email' => $user->email], function (User $u, #[\SensitiveParameter] string $token) {
+            $u->sendPasswordResetNotification($token);
+        });
     }
 
     /**
