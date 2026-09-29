@@ -1,6 +1,25 @@
 {{-- Service detail (FR-SVC-02, FR-TEAM-02). --}}
 @extends('layouts.public')
 
+@php
+    $serviceSchema = array_filter([
+        '@context' => 'https://schema.org',
+        '@type' => 'Service',
+        'name' => $service['title'],
+        'description' => $service['description'] ?: $service['short_description'],
+        'url' => $service['seo']['canonical_url'],
+        'provider' => array_filter([
+            '@type' => 'Organization',
+            'name' => data_get($settings, 'branding.site_name') ?: config('app.name'),
+            'url' => route('home'),
+        ]),
+    ]);
+@endphp
+
+@push('head')
+    <script type="application/ld+json">@json($serviceSchema)</script>
+@endpush
+
 @section('content')
     @include('public.partials.page-hero', [
         'heroTitle' => $service['title'],
