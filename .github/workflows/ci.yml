@@ -49,11 +49,22 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      # No .env exists on a fresh checkout (it's gitignored). Every value the
+      # tests need already comes from phpunit.xml/job env, but without a file
+      # here at all, phpdotenv's suppressed file_get_contents() still gets
+      # caught by PHPUnit as a warning on every test that boots the app.
+      - name: Create empty .env
+        run: touch .env
+
       # phpunit.xml already points DB_CONNECTION at sqlite/:memory: for the
       # testing environment, so no database setup is needed here.
-      # --fail-on-skipped: a skipped test fails the build, same as a failure.
+      # No --fail-on-skipped here (unlike the MySQL job): SortOrderTest's row
+      # lock test permanently and legitimately skips on SQLite (FOR UPDATE is
+      # a MySQL-only concept), so this job always has exactly one intentional
+      # skip. That test still runs for real on the MySQL job below, where the
+      # flag stays on to catch any other, genuinely accidental skip.
       - name: Run test suite (SQLite)
-        run: composer test -- --fail-on-skipped
+        run: composer test
 
   tests-mysql:
     name: Tests (MySQL)
@@ -99,6 +110,14 @@ jobs:
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      # No .env exists on a fresh checkout (it's gitignored). Every value
+      # these commands need already comes from this job's own env block, but
+      # without a file here at all, phpdotenv's suppressed file_get_contents()
+      # still gets caught by PHPUnit as a warning on every test that boots
+      # the app (and prints a harmless one on every artisan call below).
+      - name: Create empty .env
+        run: touch .env
 
       # The same migrate + seed path a local/production deploy uses (schema
       # plan §12), proven against a real MySQL engine — not just SQLite.
