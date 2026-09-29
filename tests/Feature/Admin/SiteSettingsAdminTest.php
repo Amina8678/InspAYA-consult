@@ -65,8 +65,7 @@ class SiteSettingsAdminTest extends TestCase
             'contact__email' => 'office@example.com',
             'social__linkedin' => 'https://www.linkedin.com/company/example',
             'seo__default_og_image' => (string) $image->id,
-            'analytics__tracking_id' => 'G-ABC123',
-        ])->assertRedirect(route('admin.settings.edit'))->assertSessionHas('status', 'Settings saved (5 changed).');
+        ])->assertRedirect(route('admin.settings.edit'))->assertSessionHas('status', 'Settings saved (4 changed).');
 
         $this->assertSame('InspAya Consult Ltd', $this->value('branding.site_name'));
         $this->assertSame('office@example.com', $this->value('contact.email'));
@@ -76,7 +75,7 @@ class SiteSettingsAdminTest extends TestCase
         $this->assertSame($user->id, $log->user_id);
         $this->assertSame('hello@example.com', $log->old_values['contact.email']);
         $this->assertSame('office@example.com', $log->new_values['contact.email']);
-        $this->assertCount(5, $log->new_values);
+        $this->assertCount(4, $log->new_values);
     }
 
     public function test_a_partial_submission_leaves_other_settings_alone(): void
@@ -118,6 +117,7 @@ class SiteSettingsAdminTest extends TestCase
             'site path is not a profile' => ['social__facebook', '/about'],
             'no scheme' => ['social__instagram', 'instagram.com/example'],
             'tracking id with script' => ['analytics__tracking_id', '<script>'],
+            'well-formed tracking id is still blocked (FR-LEGAL-02 stopgap)' => ['analytics__tracking_id', 'G-ABC123'],
             'description too long' => ['seo__default_description', str_repeat('a', 301)],
             'media id not an image' => ['branding__logo', 'pdf'],
             'media id missing' => ['branding__footer_logo', '999999'],
@@ -164,6 +164,30 @@ class SiteSettingsAdminTest extends TestCase
 
         $this->put(route('admin.settings.update'), ['analytics__tracking_id' => 'G-NEW']);
         $this->assertDatabaseMissing('site_settings', ['key' => 'analytics.tracking_id']);
+    }
+
+    public function test_setting_a_tracking_id_is_refused_until_cookie_consent_exists(): void
+    {
+        $this->asAdmin();
+
+        $this->from(route('admin.settings.edit'))
+            ->put(route('admin.settings.update'), ['analytics__tracking_id' => 'G-ABC123'])
+            ->assertRedirect(route('admin.settings.edit'))
+            ->assertSessionHasErrors(['analytics__tracking_id' => "Analytics can't be enabled yet: this site has no cookie-consent mechanism in place (FR-LEGAL-02), so setting a tracking ID is refused until that ships. Leave it empty for now."]);
+
+        $this->assertNull($this->value('analytics.tracking_id'));
+    }
+
+    public function test_clearing_an_existing_tracking_id_is_still_allowed(): void
+    {
+        $this->asAdmin();
+        SiteSetting::where('key', 'analytics.tracking_id')->update(['value' => 'G-OLD']);
+
+        $this->put(route('admin.settings.update'), ['analytics__tracking_id' => ''])
+            ->assertRedirect(route('admin.settings.edit'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull($this->value('analytics.tracking_id'));
     }
 
     public function test_editor_and_author_cannot_see_or_change_settings(): void

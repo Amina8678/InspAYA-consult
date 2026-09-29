@@ -127,6 +127,11 @@ stage (`ForceHttps`, `SecurityHeaders` middleware, applied to every request in
   acts on `$request->secure()`. If production sits behind a reverse proxy or
   load balancer that terminates TLS, `$request->secure()` reflects the real
   scheme only once that proxy is trusted — see "Trusted proxies" below.
+- **The CSP has no `'unsafe-inline'`** for scripts or styles. If a future page
+  adds a script or an inline `style="..."` attribute, it will be silently
+  blocked by browsers unless it either becomes a same-origin file, or (for a
+  script) carries the per-request nonce shared as `$cspNonce` — see the three
+  JSON-LD blocks (Organization/Article/Service) for the pattern.
 
 ### Trusted proxies
 
@@ -160,8 +165,21 @@ This is deliberately not guessed or defaulted to "trust everything": an
 unconfigured trust setting is a redirect loop (visible immediately), not a
 silent security hole, and the correct value can only come from whoever
 controls the production network.
-- **The CSP has no `'unsafe-inline'`** for scripts or styles. If a future page
-  adds a script or an inline `style="..."` attribute, it will be silently
-  blocked by browsers unless it either becomes a same-origin file, or (for a
-  script) carries the per-request nonce shared as `$cspNonce` — see the three
-  JSON-LD blocks (Organization/Article/Service) for the pattern.
+
+### Analytics consent
+
+FR-LEGAL-02 requires a cookie/analytics notice and preference controls before
+any non-essential (i.e. analytics) cookie is set. That consent mechanism does
+not exist in this codebase yet — no banner, no preference UI, nothing reading
+or writing a consent cookie.
+
+Until it does, `SiteSettingsRequest` refuses to save a non-empty
+`analytics.tracking_id` (`'tracking' => ['string', 'prohibited']`): an admin
+can leave the field empty or clear an existing value, but cannot set one.
+This is a stopgap for the specific risk of a non-technical admin turning on
+tracking with no consent gate in place — it is **not** the fix for
+FR-LEGAL-02, which still needs the actual banner and preference controls on
+the public site. Remove the `prohibited` rule (restoring the previous format
+check, `max:40` + `regex:/^[A-Za-z0-9-]+$/D`) only once that consent
+mechanism ships and can gate the analytics script itself; see the comment
+above the `'tracking'` case in `SiteSettingsRequest::rules()`.

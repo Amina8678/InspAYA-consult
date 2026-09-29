@@ -238,10 +238,18 @@ Site-wide settings from the CMS, grouped by the part before the dot:
 | `$settings['seo']['default_title']` | string, nullable |
 | `$settings['seo']['default_description']` | string, nullable |
 | `$settings['seo']['default_og_image']` | image, nullable (already used as the `og_image` fallback) |
-| `$settings['analytics']['tracking_id']` | string, nullable |
+| `$settings['analytics']['tracking_id']` | string, nullable — always `null` in practice; see note below |
 
 Settings can be missing entirely on a fresh install. Read them with a fallback,
 e.g. `data_get($settings, 'contact.email')`.
+
+**`analytics.tracking_id` is currently unsettable.** FR-LEGAL-02 requires a
+cookie/analytics consent notice before any tracking can run, and that hasn't
+been built yet — `SiteSettingsRequest` refuses to save a non-empty value
+until it exists (see docs/admin-auth.md "Analytics consent"). Never build a
+view that reads or outputs this field: right now it can only ever be `null`,
+and doing so would ship tracking with no consent gate the moment someone
+lifts the stopgap without also building the gate.
 
 ### `$navigation`
 
