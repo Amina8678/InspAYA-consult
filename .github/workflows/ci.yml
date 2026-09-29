@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+env:
+  # CI-only: never a real secret, never used outside these ephemeral runs.
+  APP_KEY: base64:gCGJGBopB0q1pBd5HypAvsASJKJA1QH7/skD8uq7me0=
+
+jobs:
+  # No Node/npm step anywhere in this workflow: no view calls @vite, and the
+  # assets actually served (public/css, public/js, public/admin-assets) are
+  # plain committed files, not a Vite build output. package.json/vite.config.js
+  # are unused starter-kit leftovers.
+
+  pint:
+    name: Code style (Pint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # Check mode only: fails the build on unformatted code, never rewrites it.
+      - name: Pint (check only)
+        run: vendor/bin/pint --test
+
+  tests-sqlite:
+    name: Tests (SQLite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, fileinfo, pdo_sqlite, sqlite3, gd, zip, intl, bcmath
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # phpunit.xml already points DB_CONNECTION at sqlite/:memory: for the
+      # testing environment, so no database setup is needed here.
+      # --fail-on-skipped: a skipped test fails the build, same as a failure.
+      - name: Run test suite (SQLite)
+        run: composer test -- --fail-on-skipped
+
+  tests-mysql:
+    name: Tests (MySQL)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: inspaya_testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      # Explicit rather than relying on Laravel's implicit "production"
+      # fallback when APP_ENV is entirely unset: this is what decides which
+      # branch DatabaseSeeder takes (demo content vs. production shells).
+      APP_ENV: testing
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: inspaya_testing
+      DB_USERNAME: root
+      DB_PASSWORD: password
+      # SuperAdminSeeder refuses to run without these (min 12-char password);
+      # CI-only values, never used for a real login.
+      SUPER_ADMIN_NAME: CI Super Admin
+      SUPER_ADMIN_USERNAME: ci-super-admin
+      SUPER_ADMIN_EMAIL: ci-super-admin@example.test
+      SUPER_ADMIN_PASSWORD: ci-only-password-not-real-1234
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, fileinfo, pdo_mysql, mysqli, gd, zip, intl, bcmath
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # The same migrate + seed path a local/production deploy uses (schema
+      # plan §12), proven against a real MySQL engine — not just SQLite.
+      - name: Run migrations against MySQL
+        run: php artisan migrate --force
+
+      - name: Run seeders against MySQL
+        run: php artisan db:seed --force
+
+      # migrate:fresh again so the test suite (RefreshDatabase, wrapping each
+      # test in a transaction) starts from an empty schema, not the rows the
+      # seed step above just inserted.
+      - name: Reset the database for the test suite
+        run: php artisan migrate:fresh --force
+
+      - name: Run test suite (MySQL)
+        run: composer test -- --fail-on-skipped
