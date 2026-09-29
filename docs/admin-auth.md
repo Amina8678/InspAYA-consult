@@ -126,9 +126,40 @@ stage (`ForceHttps`, `SecurityHeaders` middleware, applied to every request in
 - **`ForceHttps` only redirects in the `production` environment**, and only
   acts on `$request->secure()`. If production sits behind a reverse proxy or
   load balancer that terminates TLS, `$request->secure()` reflects the real
-  scheme only once that proxy is trusted (Laravel's `TrustProxies` middleware,
-  or `Request::setTrustedProxies()`) — configure this with the load balancer's
-  actual address; it is not safe to guess here.
+  scheme only once that proxy is trusted — see "Trusted proxies" below.
+
+### Trusted proxies
+
+Laravel's `TrustProxies` middleware is already in the app's global middleware
+stack (`bootstrap/app.php`), but it trusts nothing by default: an
+`X-Forwarded-Proto: https` header from an untrusted source is ignored, so
+`$request->secure()` reflects the raw connection the app server sees. Behind
+a reverse proxy or load balancer that terminates TLS, that raw connection is
+plain HTTP even though the visitor is on HTTPS — `ForceHttps` then sees "not
+secure" and redirects, which the proxy immediately terminates back to HTTP
+again, producing a redirect loop for the whole site.
+
+**Set `TRUSTED_PROXIES` in the production `.env`** to fix this — the exact
+value is server-specific and must come from whoever configures that proxy:
+
+- A specific IP or comma-separated list of IPs/CIDR ranges (e.g.
+  `TRUSTED_PROXIES=10.0.0.5` or `10.0.0.0/24,10.0.1.0/24`) — the proxy's own
+  address(es), not the visitor's. This is the expected value for a
+  self-managed nginx/HAProxy/ALB in front of the app.
+- `TRUSTED_PROXIES=*` trusts whatever host is directly connecting to the app
+  as a proxy. Only correct when that connection is itself already secured
+  (e.g. the app is unreachable except through the proxy, such as inside a
+  private network or a PaaS that guarantees this) — never set this if the
+  app is also reachable directly from the internet, since it would let any
+  direct caller spoof `X-Forwarded-Proto` and other forwarded headers.
+- Left blank (the `.env.example` default), no proxy is trusted and
+  `$request->secure()` reflects the raw connection — correct only when the
+  app itself terminates TLS with no proxy in front of it.
+
+This is deliberately not guessed or defaulted to "trust everything": an
+unconfigured trust setting is a redirect loop (visible immediately), not a
+silent security hole, and the correct value can only come from whoever
+controls the production network.
 - **The CSP has no `'unsafe-inline'`** for scripts or styles. If a future page
   adds a script or an inline `style="..."` attribute, it will be silently
   blocked by browsers unless it either becomes a same-origin file, or (for a
