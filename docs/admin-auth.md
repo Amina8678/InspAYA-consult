@@ -110,7 +110,29 @@ that role's users' next request.
 
 ### Production settings not enforceable from app code
 
-NFR-SEC-03 requires secure, HTTP-only, SameSite cookies. Set in the production
-`.env`: `SESSION_SECURE_COOKIE=true` (HTTP-only and `SameSite=lax` are already
-the defaults). NFR-SEC-09 (HTTPS redirect, security headers, CSP) belongs to a
-later stage.
+NFR-SEC-03 requires secure, HTTP-only, SameSite cookies. `config/session.php`
+reads `'secure' => env('SESSION_SECURE_COOKIE')`, never a hardcoded `false`,
+so nothing in the app itself needs to change — but the production `.env` must
+still set it explicitly:
+
+- **`SESSION_SECURE_COOKIE=true`** in the production `.env` (HTTP-only and
+  `SameSite=lax` are already the defaults). Left unset, Laravel defaults to
+  `null` ("secure if the current request is HTTPS"), which is the right
+  behaviour locally but should not be relied on in production — set it
+  explicitly.
+
+NFR-SEC-09 (HTTPS redirect, security headers, CSP) is implemented as of this
+stage (`ForceHttps`, `SecurityHeaders` middleware, applied to every request in
+`bootstrap/app.php`). Two things this code cannot do for you:
+
+- **`ForceHttps` only redirects in the `production` environment**, and only
+  acts on `$request->secure()`. If production sits behind a reverse proxy or
+  load balancer that terminates TLS, `$request->secure()` reflects the real
+  scheme only once that proxy is trusted (Laravel's `TrustProxies` middleware,
+  or `Request::setTrustedProxies()`) — configure this with the load balancer's
+  actual address; it is not safe to guess here.
+- **The CSP has no `'unsafe-inline'`** for scripts or styles. If a future page
+  adds a script or an inline `style="..."` attribute, it will be silently
+  blocked by browsers unless it either becomes a same-origin file, or (for a
+  script) carries the per-request nonce shared as `$cspNonce` — see the three
+  JSON-LD blocks (Organization/Article/Service) for the pattern.
