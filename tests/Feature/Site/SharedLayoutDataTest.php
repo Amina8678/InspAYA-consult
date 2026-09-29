@@ -74,6 +74,28 @@ class SharedLayoutDataTest extends SiteTestCase
         });
     }
 
+    /**
+     * SiteLayoutComposer has built $navigation[n]['children'] since it was
+     * introduced, but nothing checked the header partial actually rendered
+     * it — the previous gap here was exactly a composer with correct data
+     * and a view that silently never read it. This checks rendered HTML,
+     * not view data.
+     */
+    public function test_the_services_dropdown_actually_renders_in_the_header_html(): void
+    {
+        $service = Service::factory()->create(['title' => 'Governance']);
+
+        $html = $this->get(route('home'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('aria-controls="nav-submenu-services"', $html);
+        $this->assertStringContainsString('id="nav-submenu-services"', $html);
+        $this->assertStringContainsString('href="'.route('services.show', $service->slug).'"', $html);
+        $this->assertStringContainsString('>Governance<', $html);
+
+        // Only Services has children: every other item renders no toggle.
+        $this->assertSame(1, substr_count($html, 'nav-submenu-toggle'));
+    }
+
     public function test_about_and_legal_links_appear_only_once_published(): void
     {
         Page::factory()->published()->create(['slug' => 'about', 'title' => 'About']);

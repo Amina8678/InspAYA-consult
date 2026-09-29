@@ -262,6 +262,87 @@ main:focus {
   }
 }
 
+/* Services submenu: without JS this is just a plain nested list (always
+   visible, same "works without JS" rule as .main-nav-panel above). With JS
+   a toggle button shows/hides it — never on hover, which mobile has none
+   of, and phones/desktop share the same open/closed mechanism, just a
+   different layout for the open list. */
+.has-children {
+  position: relative;
+}
+
+.nav-submenu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--color-header-text);
+  cursor: pointer;
+}
+
+.nav-submenu-toggle .icon {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 0.15s ease;
+}
+
+.nav-submenu-toggle[aria-expanded="true"] .icon {
+  transform: rotate(180deg);
+}
+
+.nav-submenu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-submenu a {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-header-text);
+  font-size: var(--font-size-nav);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.nav-submenu a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+.js .nav-submenu-toggle {
+  display: inline-flex;
+}
+
+.js .nav-submenu:not(.is-open) {
+  display: none;
+}
+
+@media (min-width: 60rem) {
+  .js .nav-submenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 14rem;
+    background: var(--color-header-bg);
+    box-shadow: var(--shadow-header);
+    padding-block: var(--space-2);
+    z-index: 10;
+  }
+}
+
+@media (max-width: 59.99rem) {
+  .nav-submenu {
+    padding-inline-start: var(--space-4);
+  }
+
+  .js .nav-submenu {
+    padding-block: var(--space-1);
+  }
+}
+
 /* Buttons (original .btn-brand) ------------------------------------------- */
 .button-row {
   display: flex;

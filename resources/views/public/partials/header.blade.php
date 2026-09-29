@@ -31,9 +31,33 @@
                 <nav class="main-nav" aria-label="Main">
                     <ul>
                         @foreach ($navigation as $item)
-                            <li>
+                            @php($hasChildren = ! empty($item['children']))
+                            <li @if ($hasChildren) class="has-children" @endif>
                                 <a href="{{ $item['url'] }}"
                                    @if ($item['active']) aria-current="{{ $item['url'] === url()->current() ? 'page' : 'true' }}" @endif>{{ $item['label'] }}</a>
+                                @if ($hasChildren)
+                                    @php($submenuId = 'nav-submenu-'.str($item['label'])->slug())
+                                    {{--
+                                        Without JS the list below is always visible (a plain
+                                        nested list, same "works without JS" rule as the rest of
+                                        the header). With JS this button toggles it — same
+                                        disclosure pattern as .nav-toggle above: a real <button>,
+                                        Escape closes it and returns focus, nothing relies on
+                                        hover (which mobile has none of), and hidden items are
+                                        skipped by Tab automatically since they're display:none.
+                                    --}}
+                                    <button type="button" class="nav-submenu-toggle" aria-expanded="false" aria-controls="{{ $submenuId }}">
+                                        <span class="visually-hidden">Show {{ $item['label'] }} submenu</span>
+                                        @include('public.partials.icon', ['name' => 'chevron-down', 'class' => 'icon icon--small'])
+                                    </button>
+                                    <ul id="{{ $submenuId }}" class="nav-submenu">
+                                        @foreach ($item['children'] as $child)
+                                            <li>
+                                                <a href="{{ $child['url'] }}" @if ($child['active']) aria-current="true" @endif>{{ $child['label'] }}</a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endif
                             </li>
                         @endforeach
                     </ul>

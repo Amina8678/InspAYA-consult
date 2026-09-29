@@ -1,8 +1,8 @@
 {{--
     Inline SVG icons (replace the original Boxicons CDN). Decorative: always
     aria-hidden, so every use needs visible or visually-hidden text.
-    $name: briefcase, check, menu, linkedin, x, facebook, instagram, mail,
-    link (default), mark. $class (optional).
+    $name: briefcase, check, chevron-down, menu, linkedin, x, facebook,
+    instagram, mail, link (default), mark. $class (optional).
 --}}
 @php($class = $class ?? 'icon')
 @switch($name)
@@ -11,6 +11,9 @@
         @break
     @case('check')
         <svg class="{{ $class }}" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12.5 2.5 2.5L16 9.5"/></svg>
+        @break
+    @case('chevron-down')
+        <svg class="{{ $class }}" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
         @break
     @case('menu')
         <svg class="{{ $class }}" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
