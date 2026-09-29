@@ -77,6 +77,19 @@ Reset emails are **queued** (`AdminResetPassword`, `ShouldQueue`). They need:
 
 Links expire after 60 minutes (`config/auth.php`, `passwords.users.expire`).
 
+**The queue-worker requirement above is not limited to password resets.**
+Contact-form notification and acknowledgement emails (`EnquiryReceived`,
+`EnquiryAcknowledgement`) are also `ShouldQueue`, through the same
+`QUEUE_CONNECTION`. **`php artisan queue:work` must run as a persistent
+process (supervisor or systemd) in production**, or every queued email —
+password resets and contact-form notifications alike — is written to the
+`jobs` table and silently never sent. There is no error anywhere: the HTTP
+response, the audit log and the application log all look completely normal,
+because from the app's point of view the job was queued successfully; it is
+simply never picked up. This is a launch-day failure mode with zero
+diagnostic signal of its own — confirm a queue worker is running as part of
+the deployment checklist, not after someone reports a missing email.
+
 ---
 
 ## 4. Authorization
