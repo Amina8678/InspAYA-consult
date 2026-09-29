@@ -1,9 +1,5 @@
 # Media Library
 
-> **Status: DRAFT.** The allowed types and limits below are a **proposal**: the
-> SRS (FR-ADM-09, NFR-SEC-10) requires "approved types" and "size limits" but
-> names neither. Confirm or adjust them with the client.
-
 ## What it does (FR-ADM-09)
 
 | Action | URL | Who (plan §6) |

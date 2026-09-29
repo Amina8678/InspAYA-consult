@@ -1,9 +1,5 @@
 # Frontend Contract — Public Website
 
-> **Status: DRAFT.** URLs, route names and view names are proposals until the
-> frontend owner has reviewed this document. Field names inside the variables
-> are stable unless noted.
-
 This document is the agreement between the backend (controllers, routes, data)
 and the frontend (Blade views, CSS, JS). It lists every public page, the Blade
 view the backend asks for, and exactly what data that view receives.
@@ -404,12 +400,19 @@ settings, and an acknowledgement to the visitor.
 
 ---
 
-## 6. Open points for review
+## 6. Decisions made since the draft
 
-1. URL and view names above (especially `consultants` and `insights`).
-2. Whether the home page should show all active services or a curated subset.
-3. Whether category/tag archive pages are wanted (would need client confirmation;
-   not required by the SRS).
-4. The default Open Graph image (`seo.default_og_image`) is empty until an
-   image is chosen in the CMS; until then `og_image` is `null` on pages without
-   their own image.
+This document started as a proposal; these are the points it originally left
+open, and how each was resolved during the build:
+
+1. URL, route and view names above (especially `consultants` and `insights`)
+   are what actually shipped, unchanged from the proposal.
+2. The home page shows **all active services**, not a curated subset
+   (`PageController`: no limit applied, unlike consultants/insights which are
+   capped).
+3. Category/tag archive pages and blog search were **not built**, per the
+   "Not included" list in section 2 — categories and tags remain plain labels.
+4. The default Open Graph image (`seo.default_og_image`) is a normal settings
+   field, empty until someone sets it from the CMS's Theme & Content screen;
+   until then `og_image` is `null` on pages without their own image. This was
+   never a decision to make, just the expected state of a fresh install.

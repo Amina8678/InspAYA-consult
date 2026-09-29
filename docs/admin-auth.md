@@ -1,7 +1,5 @@
 # Admin Authentication & Access Control
 
-> **Status: DRAFT**, for review together with `frontend-contract.md`.
-
 Backend behaviour for signing in, passwords and role-based access (SRS FR-ADM-02,
 FR-ADM-03, FR-ADM-11, NFR-SEC-01 to 08, §7). Section 1 is for whoever builds the
 admin views; sections 2–4 are for developers and operations.

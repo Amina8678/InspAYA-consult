@@ -61,7 +61,10 @@ as they are).
 **Consequence:** the existing controllers, routes and views reference these
 models and columns. The public site and admin will not work until the controller
 rewrite (step 2). `tests/Feature/ExampleTest` gets `RefreshDatabase` and is
-skipped with the reason "re-enable at controller rewrite step".
+skipped with the reason "re-enable at controller rewrite step". (It was later
+re-enabled once that rewrite landed, and then deleted outright once
+`PageRoutesTest::test_home_renders_with_no_home_page_record_at_all` made it
+redundant — it no longer exists.)
 
 ---
 
