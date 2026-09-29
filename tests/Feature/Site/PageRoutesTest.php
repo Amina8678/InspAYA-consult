@@ -108,7 +108,7 @@ class PageRoutesTest extends SiteTestCase
     }
 
     #[DataProvider('publishablePages')]
-    public function test_draft_page_404s(string $slug, string $route): void
+    public function test_draft_page_404s(string $slug, string $route, string $view): void
     {
         Page::factory()->draft()->create(['slug' => $slug]);
 
@@ -116,7 +116,7 @@ class PageRoutesTest extends SiteTestCase
     }
 
     #[DataProvider('publishablePages')]
-    public function test_page_with_future_publish_date_404s(string $slug, string $route): void
+    public function test_page_with_future_publish_date_404s(string $slug, string $route, string $view): void
     {
         Page::factory()->published()->create(['slug' => $slug, 'published_at' => now()->addDay()]);
 
@@ -124,7 +124,7 @@ class PageRoutesTest extends SiteTestCase
     }
 
     #[DataProvider('publishablePages')]
-    public function test_missing_page_404s(string $slug, string $route): void
+    public function test_missing_page_404s(string $slug, string $route, string $view): void
     {
         $this->get(route($route))->assertNotFound();
     }

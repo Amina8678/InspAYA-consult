@@ -32,7 +32,7 @@ class SharedLayoutDataTest extends SiteTestCase
     }
 
     #[DataProvider('publicRoutes')]
-    public function test_every_public_view_receives_settings_navigation_and_footer(string $route): void
+    public function test_every_public_view_receives_settings_navigation_and_footer(string $route, array $routeParams): void
     {
         $this->seed(SiteSettingsSeeder::class);
 

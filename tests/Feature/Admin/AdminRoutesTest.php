@@ -183,7 +183,7 @@ class AdminRoutesTest extends TestCase
     }
 
     #[DataProvider('adminRoutes')]
-    public function test_guest_is_redirected_to_login(string $method, string $path): void
+    public function test_guest_is_redirected_to_login(string $method, string $path, array $allowed, array $denied, int $status): void
     {
         $this->hit($method, $path)->assertRedirect(route('admin.login'));
     }
@@ -219,7 +219,7 @@ class AdminRoutesTest extends TestCase
     }
 
     #[DataProvider('restrictedRoutes')]
-    public function test_other_roles_get_403(string $method, string $path, array $allowed, array $denied): void
+    public function test_other_roles_get_403(string $method, string $path, array $allowed, array $denied, int $status): void
     {
         foreach ($denied as $role) {
             $this->actingAs(User::factory()->withRole($role)->create());
