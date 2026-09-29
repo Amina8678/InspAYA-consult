@@ -8,6 +8,7 @@ use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\Tag;
 use Illuminate\Pagination\LengthAwarePaginator;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class InsightRoutesTest extends SiteTestCase
 {
@@ -113,7 +114,7 @@ class InsightRoutesTest extends SiteTestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('hiddenPosts')]
+    #[DataProvider('hiddenPosts')]
     public function test_unpublished_post_404s(callable $makePost): void
     {
         $post = $makePost();

@@ -6,11 +6,11 @@ use App\Http\Controllers\Site\ContactController;
 use App\Models\BlogPost;
 use App\Models\Consultant;
 use App\Models\CoreValue;
-use App\Models\Media;
 use App\Models\Page;
 use App\Models\Service;
 use Database\Seeders\SiteSettingsSeeder;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * The real Blade views: structure, head tags, escaping and key content.
@@ -56,7 +56,7 @@ class RenderedPagesTest extends SiteTestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('pages')]
+    #[DataProvider('pages')]
     public function test_every_page_has_landmarks_one_h1_and_seo_head_tags(string $url): void
     {
         $response = $this->get($url)->assertOk();

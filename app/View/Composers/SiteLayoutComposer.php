@@ -6,7 +6,6 @@ use App\Models\Page;
 use App\Models\Service;
 use App\Support\SafeUrl;
 use App\Support\SiteSettings;
-use App\View\Presenters\MediaPresenter;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\View\View;

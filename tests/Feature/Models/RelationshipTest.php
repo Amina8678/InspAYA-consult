@@ -4,7 +4,6 @@ namespace Tests\Feature\Models;
 
 use App\Models\AuditLog;
 use App\Models\BlogPost;
-use App\Models\Category;
 use App\Models\Consultant;
 use App\Models\ContactSubmission;
 use App\Models\ContactSubmissionNote;

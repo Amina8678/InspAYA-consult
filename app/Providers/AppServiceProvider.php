@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Enums\UserStatus;
 use App\Models\AuditLog;
 use App\Models\BlogPost;
 use App\Models\Category;
@@ -19,17 +20,16 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Support\SiteSettings;
 use App\View\Composers\SiteLayoutComposer;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\View;
-use App\Enums\UserStatus;
-use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
-use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;

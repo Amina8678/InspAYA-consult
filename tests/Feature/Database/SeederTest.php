@@ -3,6 +3,7 @@
 namespace Tests\Feature\Database;
 
 use App\Enums\PageStatus;
+use App\Enums\SettingType;
 use App\Models\BlogPost;
 use App\Models\Consultant;
 use App\Models\CoreValue;
@@ -199,7 +200,7 @@ class SeederTest extends TestCase
         $setting = SiteSetting::where('key', 'seo.default_og_image')->sole();
 
         $this->assertSame('seo', $setting->group);
-        $this->assertSame(\App\Enums\SettingType::Media, $setting->type);
+        $this->assertSame(SettingType::Media, $setting->type);
         $this->assertNull($setting->value);
         $this->assertNull($setting->media_id);
     }

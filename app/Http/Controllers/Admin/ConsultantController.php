@@ -14,6 +14,7 @@ use App\Support\MediaPicker;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -207,7 +208,7 @@ class ConsultantController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Service>
+     * @return Collection<int, Service>
      */
     private function serviceOptions()
     {

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Http\Controllers\Admin\AccountPasswordController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Models\User;
@@ -50,10 +51,10 @@ class PasswordTest extends TestCase
                 'password_confirmation' => self::NEW,
             ])
             ->assertRedirect(route('admin.account.password.edit'))
-            ->assertSessionHas('status', \App\Http\Controllers\Admin\AccountPasswordController::UPDATED_MESSAGE);
+            ->assertSessionHas('status', AccountPasswordController::UPDATED_MESSAGE);
 
         $this->get(route('admin.account.password.edit'))->assertOk()
-            ->assertSee(\App\Http\Controllers\Admin\AccountPasswordController::UPDATED_MESSAGE);
+            ->assertSee(AccountPasswordController::UPDATED_MESSAGE);
 
         $this->assertTrue(Hash::check(self::NEW, $user->fresh()->password));
         $this->assertAuthenticatedAs($user);

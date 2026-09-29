@@ -9,6 +9,7 @@ use App\Models\Media;
 use App\Models\Page;
 use App\Models\Service;
 use App\Models\SiteSetting;
+use App\Models\Tag;
 use Database\Seeders\SiteSettingsSeeder;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -109,7 +110,7 @@ class SharedLayoutDataTest extends SiteTestCase
         $few = count($this->captureQueries(fn () => $this->get(route('insights.index'))->assertOk()));
 
         BlogPost::factory()->published()->categorised()->withFeaturedImage()->count(7)->create()
-            ->each(fn (BlogPost $post) => $post->tags()->attach(\App\Models\Tag::factory()->create()));
+            ->each(fn (BlogPost $post) => $post->tags()->attach(Tag::factory()->create()));
         $many = count($this->captureQueries(fn () => $this->get(route('insights.index'))->assertOk()));
 
         $this->assertSame($few, $many);

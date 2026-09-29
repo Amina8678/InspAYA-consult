@@ -4,6 +4,7 @@ namespace Tests\Feature\Site;
 
 use App\Http\Controllers\Site\ContactController;
 use App\Models\ContactSubmission;
+use App\Models\SiteSetting;
 use App\Notifications\EnquiryAcknowledgement;
 use App\Notifications\EnquiryReceived;
 use Database\Seeders\SiteSettingsSeeder;
@@ -208,7 +209,7 @@ class ContactFormTest extends SiteTestCase
     public function test_company_email_falls_back_to_the_mail_from_address(): void
     {
         Notification::fake();
-        \App\Models\SiteSetting::where('key', 'email.enquiry_recipient')->delete();
+        SiteSetting::where('key', 'email.enquiry_recipient')->delete();
         config(['mail.from.address' => 'fallback@example.com']);
 
         $this->submit($this->valid());

@@ -78,7 +78,7 @@ class ServiceRequest extends FormRequest
                     $items = self::lines($this->input($field));
 
                     if (count($items) > self::MAX_LIST_ITEMS) {
-                        $validator->errors()->add($field, "Enter at most ".self::MAX_LIST_ITEMS." {$field}, one per line.");
+                        $validator->errors()->add($field, 'Enter at most '.self::MAX_LIST_ITEMS." {$field}, one per line.");
                     }
                     foreach ($items as $item) {
                         if (mb_strlen($item) > self::MAX_ITEM_LENGTH) {

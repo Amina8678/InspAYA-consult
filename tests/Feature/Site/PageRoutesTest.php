@@ -8,6 +8,7 @@ use App\Models\CoreValue;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\Service;
+use App\Models\SiteSetting;
 use Database\Seeders\SiteSettingsSeeder;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -132,7 +133,7 @@ class PageRoutesTest extends SiteTestCase
     {
         $this->seed(SiteSettingsSeeder::class);
         $image = Media::factory()->create();
-        \App\Models\SiteSetting::where('key', 'seo.default_og_image')->update(['media_id' => $image->id]);
+        SiteSetting::where('key', 'seo.default_og_image')->update(['media_id' => $image->id]);
 
         $this->get(route('services.index'))->assertOk()
             ->assertViewHas('seo', fn (array $seo) => str_ends_with($seo['og_image']['url'], $image->storage_path));

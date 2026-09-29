@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\BlogPost;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -106,7 +107,7 @@ class PermissionMatrixTest extends TestCase
         $admin = User::factory()->withRole('super-admin')->inactive()->create();
 
         $this->assertFalse(Gate::forUser($admin)->allows('posts.create'));
-        $this->assertFalse(Gate::forUser($admin)->allows('viewAny', \App\Models\BlogPost::class));
+        $this->assertFalse(Gate::forUser($admin)->allows('viewAny', BlogPost::class));
     }
 
     public function test_permission_changes_apply_on_the_next_request_without_stale_cache(): void

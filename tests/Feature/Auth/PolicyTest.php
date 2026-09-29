@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\BlogPost;
 use App\Models\ContactSubmissionNote;
 use App\Models\Media;
+use App\Models\Page;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\SiteSetting;
@@ -64,7 +65,7 @@ class PolicyTest extends TestCase
         $this->assertTrue($this->can($editor, 'update', $post));
         $this->assertTrue($this->can($editor, 'delete', $post));
         $this->assertFalse($this->can($editor, 'publish', $post));
-        $this->assertFalse($this->can($editor, 'publish', \App\Models\Page::factory()->create()));
+        $this->assertFalse($this->can($editor, 'publish', Page::factory()->create()));
     }
 
     public function test_administrator_publishes(): void

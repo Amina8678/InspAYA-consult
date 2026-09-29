@@ -7,6 +7,7 @@ use App\Models\BlogPost;
 use App\View\Presenters\ContentPresenter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 /**
  * Insights (SRS site map name for the blog). Only published posts whose
@@ -56,7 +57,7 @@ class InsightController extends Controller
      * Related articles (FR-BLOG-04): latest published posts sharing the
      * category or a tag.
      *
-     * @return \Illuminate\Support\Collection<int, BlogPost>
+     * @return Collection<int, BlogPost>
      */
     private function related(BlogPost $post)
     {

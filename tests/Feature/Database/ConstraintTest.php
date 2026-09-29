@@ -17,6 +17,7 @@ use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Tag;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,7 +57,7 @@ class ConstraintTest extends TestCase
     }
 
     /**
-     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
+     * @param  class-string<Model>  $model
      */
     #[DataProvider('uniqueColumns')]
     public function test_unique_column_rejects_duplicates(string $model, string $column): void
