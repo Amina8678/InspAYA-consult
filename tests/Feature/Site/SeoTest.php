@@ -183,13 +183,6 @@ class SeoTest extends SiteTestCase
         $response->assertDontSee('rel="canonical"', false);
     }
 
-    public function test_no_custom_500_page_exists_a_5xx_status_is_inherently_non_indexable(): void
-    {
-        // Confirmed rather than assumed (item 4): there is no custom 500
-        // view, so nothing needs a noindex tag added to it. A bare 5xx HTTP
-        // status is not crawled/indexed regardless of body content, so this
-        // is not a gap — if a custom 500 view is added later it must carry
-        // the same @section('robots', 'noindex') as 404 and 429.
-        $this->assertFileDoesNotExist(resource_path('views/errors/500.blade.php'));
-    }
+    // A custom 500 page (noindex, generic content) was added in stage 11;
+    // see Tests\Feature\Site\Error500Test.
 }
