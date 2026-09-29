@@ -42,7 +42,7 @@ class DashboardController extends Controller
                 ? ContactSubmission::query()->latest()->latest('id')->limit(self::RECENT)->get(['id', 'name', 'subject', 'status', 'created_at'])
                 : null,
             'activity' => $user->can('audit-logs.view')
-                ? AuditLog::query()->with('user:id,name')->latest('created_at')->latest('id')->limit(self::ACTIVITY)->get()
+                ? AuditLog::query()->with(['user:id,name,role_id', 'user.role:id,name'])->latest('created_at')->latest('id')->limit(self::ACTIVITY)->get()
                 : null,
             'alerts' => $this->alerts($user),
         ]);

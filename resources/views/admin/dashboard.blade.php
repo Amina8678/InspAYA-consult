@@ -103,7 +103,7 @@
                                 <td data-label="When">
                                     <time datetime="{{ $entry->created_at->toIso8601String() }}">{{ $entry->created_at->format('j M Y, H:i') }}</time>
                                 </td>
-                                <td data-label="Who">{{ $entry->user?->name ?? ($entry->new_values['email'] ?? 'System') }}</td>
+                                <td data-label="Who">{{ App\Support\AuditLogPresenter::actor($entry) }}</td>
                                 <td data-label="Action">{{ str($entry->action)->headline() }}</td>
                                 <td data-label="Record">
                                     @if ($entry->entity_type)
