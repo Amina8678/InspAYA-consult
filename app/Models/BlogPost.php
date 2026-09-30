@@ -69,6 +69,16 @@ class BlogPost extends Model
     }
 
     /**
+     * Status is Published but the publish date is still in the future
+     * (stage 17 scheduled publishing): not yet visible on the public site,
+     * so the admin should never call it "Published" outright.
+     */
+    public function isScheduled(): bool
+    {
+        return $this->status === PostStatus::Published && $this->published_at?->isFuture() === true;
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function author(): BelongsTo

@@ -204,15 +204,24 @@ class BlogPostAdminTest extends TestCase
         $future = now()->addDays(5)->format('Y-m-d\TH:i');
 
         $this->put(route('admin.posts.update', $post), $this->payload(['status' => 'published', 'published_at' => $future]))
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', 'Scheduled "Board effectiveness in 2026" to publish on '.$post->fresh()->published_at->format('j M Y, H:i').'.');
 
         $this->assertSame(PostStatus::Published, $post->fresh()->status);
         $this->assertTrue($post->fresh()->published_at->isFuture());
+        $this->assertTrue($post->fresh()->isScheduled());
         $this->publicPage('insights.show', 'future-post')->assertNotFound();
         $this->publicPage('insights.index')->assertDontSee($post->title);
 
         // The admin editor still shows it.
         $this->get(route('admin.posts.edit', $post))->assertOk()->assertSee($post->fresh()->title);
+
+        // The list is explicit it isn't live yet, and never offers a "View"
+        // link that would 404 on the public site (stage 17).
+        $html = $this->get(route('admin.posts.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('Scheduled for '.$post->fresh()->published_at->format('j M Y, H:i'), $html);
+        $this->assertStringNotContainsString('>Published<', $html);
+        $this->assertStringNotContainsString('href="'.route('insights.show', 'future-post').'"', $html);
     }
 
     public function test_changing_the_slug_of_a_published_post_needs_confirmation(): void

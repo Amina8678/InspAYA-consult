@@ -270,6 +270,10 @@ class BlogPostController extends Controller
     private function statusMessage(BlogPost $post, PostStatus $before, ?bool $statusChange): string
     {
         return match (true) {
+            // Covers both "just published with a future date" and "already
+            // published, just moved the date further out" — either way the
+            // post isn't live yet, so it's never just "Saved" or "Published".
+            $post->isScheduled() => 'Scheduled "'.$post->title.'" to publish on '.$post->published_at->format('j M Y, H:i').'.',
             $statusChange === true => 'Published "'.$post->title.'".',
             $statusChange === false => 'Unpublished "'.$post->title.'". It is now a draft.',
             $before !== $post->status && $post->status === PostStatus::Review => 'Submitted "'.$post->title.'" for review.',

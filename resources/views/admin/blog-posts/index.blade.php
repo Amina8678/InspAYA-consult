@@ -3,10 +3,11 @@
 @section('title', 'Blog posts')
 
 @php
-    $statusLabel = fn ($status) => match ($status->value) {
-        'draft' => 'Draft',
-        'review' => 'In review',
-        'published' => 'Published',
+    $statusLabel = fn ($post) => match (true) {
+        $post->isScheduled() => 'Scheduled for '.$post->published_at->format('j M Y, H:i'),
+        $post->status->value === 'draft' => 'Draft',
+        $post->status->value === 'review' => 'In review',
+        $post->status->value === 'published' => 'Published',
     };
 @endphp
 
@@ -46,7 +47,7 @@
                     @foreach ($posts as $post)
                         <tr>
                             <td data-label="Post"><div><strong>{{ $post->title }}</strong></div></td>
-                            <td data-label="Status"><div>{{ $statusLabel($post->status) }}</div></td>
+                            <td data-label="Status"><div>{{ $statusLabel($post) }}</div></td>
                             <td data-label="Author"><div>{{ $post->author->name }}</div></td>
                             <td data-label="Category"><div>{{ $post->category?->name ?? 'None' }}</div></td>
                             <td data-label="Last changed"><div>
@@ -56,7 +57,7 @@
                                 @can('update', $post)
                                     <a href="{{ route('admin.posts.edit', $post) }}">Edit<span class="visually-hidden"> {{ $post->title }}</span></a>
                                 @endcan
-                                @if ($post->status->value === 'published')
+                                @if ($post->status->value === 'published' && ! $post->isScheduled())
                                     <a href="{{ route('insights.show', $post->slug) }}" target="_blank" rel="noopener">View<span class="visually-hidden"> {{ $post->title }} on the website (opens in a new tab)</span></a>
                                 @endif
                                 @can('delete', $post)

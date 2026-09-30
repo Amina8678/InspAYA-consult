@@ -3,13 +3,15 @@
 @php
     $editing = $post->exists;
     $isPublished = $editing && $post->status === App\Enums\PostStatus::Published;
+    $isScheduled = $editing && $post->isScheduled();
     $statusLabel = fn ($status) => match ($status->value) {
         'draft' => 'Draft (not on the website)',
         'review' => 'In review',
         'published' => 'Published',
     };
     $canChangeStatus = count($statusOptions) > 1;
-    $publicUrl = $isPublished ? route('insights.show', $post->slug) : null;
+    // Not yet live while scheduled: linking to it would 404.
+    $publicUrl = $isPublished && ! $isScheduled ? route('insights.show', $post->slug) : null;
 @endphp
 
 @section('title', $editing ? 'Edit '.$post->title : 'Write a post')
@@ -129,7 +131,7 @@
                     </select>
                 </div>
             @else
-                <p>Status: <strong>{{ $statusLabel($post->status ?? App\Enums\PostStatus::Draft) }}</strong>.
+                <p>Status: <strong>{{ $isScheduled ? 'Scheduled for '.$post->published_at->format('j M Y, H:i') : $statusLabel($post->status ?? App\Enums\PostStatus::Draft) }}</strong>.
                     @if ($editing && $post->status === App\Enums\PostStatus::Draft)
                         Save to keep it as a draft.
                     @elseif ($editing && $post->status === App\Enums\PostStatus::Review)
