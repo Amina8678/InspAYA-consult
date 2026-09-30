@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\EnquiryStatus;
+use App\Enums\PendingRevisionStatus;
 use App\Enums\PostStatus;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
@@ -10,6 +11,7 @@ use App\Models\BlogPost;
 use App\Models\Consultant;
 use App\Models\ContactSubmission;
 use App\Models\Page;
+use App\Models\PendingRevision;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\SiteSettings;
@@ -112,6 +114,35 @@ class DashboardController extends Controller
                     'message' => "{$new} new ".str('enquiry')->plural($new).' awaiting a response.',
                     'url' => route('admin.enquiries.index', ['status' => 'new']),
                 ];
+            }
+        }
+
+        if ($user->can('content.publish')) {
+            $pending = PendingRevision::query()->pending()->count();
+            if ($pending > 0) {
+                $alerts[] = [
+                    'message' => "{$pending} content ".str('change')->plural($pending).' awaiting approval.',
+                    'url' => route('admin.content-approvals.index'),
+                ];
+            }
+        } else {
+            // Only non-publishers ever submit a pending revision, so this is
+            // empty (and skipped) for anyone who publishes directly.
+            $mine = PendingRevision::query()
+                ->where('submitted_by', $user->id)
+                ->whereIn('status', [PendingRevisionStatus::Pending, PendingRevisionStatus::Rejected])
+                ->with('revisable')
+                ->latest('id')
+                ->get()
+                // Keep only the latest row per record: a rejection followed
+                // by a resubmission leaves the old rejected row in place as
+                // history, but it's superseded and shouldn't still alert.
+                ->unique(fn (PendingRevision $r) => $r->revisable_type.':'.$r->revisable_id);
+
+            foreach ($mine as $revision) {
+                $alerts[] = $revision->status === PendingRevisionStatus::Pending
+                    ? 'Your edit to "'.$revision->revisable->title.'" is awaiting approval.'
+                    : 'Your edit to "'.$revision->revisable->title.'" was rejected: '.$revision->rejection_reason;
             }
         }
 

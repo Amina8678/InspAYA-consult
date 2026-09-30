@@ -20,6 +20,10 @@
         <a href="{{ route('admin.posts.index') }}">Back to posts</a>
     </div>
 
+    @if ($editing)
+        @include('admin.partials.pending-revision-banner', ['revisable' => $post])
+    @endif
+
     @include('admin.partials.errors', ['fields' => [
         'title' => 'field-title', 'slug' => 'field-slug', 'confirm_slug_change' => 'field-confirm_slug_change',
         'excerpt' => 'field-excerpt', 'content' => 'field-content', 'category_id' => 'field-category_id',
@@ -130,6 +134,8 @@
                         Save to keep it as a draft.
                     @elseif ($editing && $post->status === App\Enums\PostStatus::Review)
                         It is waiting for an editor or administrator.
+                    @elseif ($editing && $post->status === App\Enums\PostStatus::Published)
+                        Your changes need an administrator's approval before they go live.
                     @else
                         Publishing and unpublishing need an administrator.
                     @endif

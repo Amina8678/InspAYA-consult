@@ -31,6 +31,10 @@
         <a href="{{ route('admin.pages.index') }}">Back to pages</a>
     </div>
 
+    @if ($editing)
+        @include('admin.partials.pending-revision-banner', ['revisable' => $page])
+    @endif
+
     @include('admin.partials.errors', ['fields' => $errorFields])
 
     <form method="POST" action="{{ $editing ? route('admin.pages.update', $page) : route('admin.pages.store') }}">
@@ -131,7 +135,7 @@
                 </div>
             @else
                 <p>Status: <strong>{{ $isPublished ? 'Published' : 'Draft' }}</strong>.
-                    {{ $isPublished ? 'Your changes go live when you save.' : 'Saving keeps it as a draft.' }}
+                    {{ $isPublished ? "Your changes need an administrator's approval before they go live." : 'Saving keeps it as a draft.' }}
                     Publishing and unpublishing need an administrator.</p>
             @endif
             @if ($editing && $page->published_at)

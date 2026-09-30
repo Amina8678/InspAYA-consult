@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Tag;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\ContentApproval;
 use App\Support\MediaPicker;
 use App\Support\Slug;
 use Illuminate\Contracts\View\View;
@@ -34,7 +35,7 @@ class BlogPostController extends Controller
         'status', 'published_at', 'meta_title', 'meta_description', 'canonical_url',
     ];
 
-    public function __construct(private AuditLogger $audit, private MediaPicker $mediaPicker) {}
+    public function __construct(private AuditLogger $audit, private MediaPicker $mediaPicker, private ContentApproval $approval) {}
 
     public function index(Request $request): View
     {
@@ -95,6 +96,24 @@ class BlogPostController extends Controller
 
     public function update(BlogPostRequest $request, BlogPost $post): RedirectResponse
     {
+        // Stage 16: an already-published post edited by someone without
+        // content.publish is never changed directly — see PageController's
+        // identical branch for the full reasoning.
+        if ($this->approval->needsApproval($post, $request->user())) {
+            $changes = $this->contentFields($request);
+            if ($request->validated('slug')) {
+                $changes['slug'] = $request->validated('slug');
+            }
+            if ($request->has('tags')) {
+                $changes['tags'] = array_map('intval', (array) $request->validated('tags'));
+            }
+
+            $this->approval->submit($post, $request->user(), $changes);
+
+            return redirect()->route('admin.posts.edit', $post)
+                ->with('status', 'Submitted your changes to "'.$post->title.'" for approval.');
+        }
+
         $before = $post->only(self::AUDITED);
         $tagsBefore = $this->tagsOf($post);
         $statusBefore = $post->status;
@@ -157,6 +176,10 @@ class BlogPostController extends Controller
 
     private function form(BlogPost $post): View
     {
+        if ($post->exists) {
+            $post->loadMissing('currentRevision.submitter');
+        }
+
         $user = auth()->user();
 
         return view('admin.blog-posts.form', [

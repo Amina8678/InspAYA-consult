@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PageRequest;
 use App\Models\Page;
 use App\Support\AuditLogger;
+use App\Support\ContentApproval;
 use App\Support\CorePages;
 use App\Support\MediaPicker;
 use App\Support\PageSections;
@@ -29,7 +30,7 @@ class PageController extends Controller
         'title', 'slug', 'status', 'structured_content', 'meta_title', 'meta_description', 'canonical_url', 'og_image_id', 'published_at',
     ];
 
-    public function __construct(private AuditLogger $audit, private MediaPicker $mediaPicker) {}
+    public function __construct(private AuditLogger $audit, private MediaPicker $mediaPicker, private ContentApproval $approval) {}
 
     public function index(Request $request): View
     {
@@ -86,6 +87,22 @@ class PageController extends Controller
     {
         if ($request->isSectionAction()) {
             return $this->rebuild($request);
+        }
+
+        // Stage 16: an already-live page edited by someone without
+        // content.publish is never changed directly — the live record is
+        // left completely untouched, and the edit becomes a pending
+        // revision for an Administrator/Super Admin to apply or discard.
+        if ($this->approval->needsApproval($page, $request->user())) {
+            $changes = $this->contentFields($request);
+            if ($request->validated('slug')) {
+                $changes['slug'] = $request->validated('slug');
+            }
+
+            $this->approval->submit($page, $request->user(), $changes);
+
+            return redirect()->route('admin.pages.edit', $page)
+                ->with('status', 'Submitted your changes to "'.$page->title.'" for approval.');
         }
 
         $before = $page->only(self::AUDITED);
@@ -186,6 +203,10 @@ class PageController extends Controller
 
     private function form(Page $page): View
     {
+        if ($page->exists) {
+            $page->loadMissing('currentRevision.submitter');
+        }
+
         $sections = old('sections', PageSections::toForm($page->structured_content));
         $mediaIds = array_merge([$page->og_image_id], array_column((array) $sections, 'background_media_id'));
 
