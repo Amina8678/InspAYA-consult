@@ -291,10 +291,21 @@ to a 404.
 | `$coreValues` | list of core values | |
 | `$consultants` | list of consultants | Up to 4 |
 | `$insights` | list of article summaries | Latest 3 |
+| `$testimonials` | list of testimonials | Trust indicators (FR-HOME-07), all active testimonials, "when supplied by the client" — an empty list hides the section entirely, not a placeholder empty state |
 | `$seo` | SEO | |
 
 When `$page` is `null`, show a sensible default hero (e.g. the site name) and
 the remaining sections.
+
+### Testimonial (`testimonial`)
+
+| Field | Type | Notes |
+|---|---|---|
+| `quote` | string | |
+| `author_name` | string | |
+| `author_title` | string, nullable | |
+| `organization` | string, nullable | |
+| `photo` | image, nullable | |
 
 ### About — `public.about`
 
@@ -369,6 +380,7 @@ Also `$seo`. For share and copy-link buttons (FR-BLOG-05) use
 | Variable | Type | Notes |
 |---|---|---|
 | `$page` | CMS page, **nullable** | Optional intro content; the page always renders |
+| `$faqs` | list of `{question, answer}` | All active FAQs, in display order. Placement decision (stage 17): SRS §1.4 mentions FAQs with no placement given (not in Appendix A's site map), so they render here rather than on a new page — next to the form they'd deflect, with no new nav item needed. An empty list hides the section entirely. Rendered with `FAQPage` structured data (NFR-SEO-04) when non-empty. |
 | `$seo` | SEO | |
 
 #### Contact form (FR-CONT-01 to 05)

@@ -99,6 +99,19 @@
         </section>
     @endif
 
+    @if ($testimonials)
+        <section class="section" aria-labelledby="testimonials-heading">
+            <div class="container">
+                @include('public.partials.section-header', ['sectionEyebrow' => 'Testimonials', 'sectionHeading' => 'What our clients say', 'sectionId' => 'testimonials-heading'])
+                <ul class="grid">
+                    @foreach ($testimonials as $testimonial)
+                        <li>@include('public.partials.testimonial-card', ['testimonial' => $testimonial, 'headingTag' => 'h3'])</li>
+                    @endforeach
+                </ul>
+            </div>
+        </section>
+    @endif
+
     <section class="section" aria-labelledby="contact-cta-heading">
         <div class="container">
             <div class="callout">

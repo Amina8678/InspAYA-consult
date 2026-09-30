@@ -5,9 +5,11 @@ namespace App\View\Presenters;
 use App\Models\BlogPost;
 use App\Models\Consultant;
 use App\Models\CoreValue;
+use App\Models\Faq;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\Service;
+use App\Models\Testimonial;
 use App\Support\SafeUrl;
 use App\Support\SiteSettings;
 use Carbon\CarbonInterface;
@@ -171,6 +173,33 @@ class ContentPresenter
             'slug' => $value->slug,
             'description' => $value->description,
             'icon' => MediaPresenter::present($value->icon),
+        ];
+    }
+
+    /**
+     * Requires photo loaded (FR-HOME-07 trust indicators).
+     *
+     * @return array{quote: string, author_name: string, author_title: ?string, organization: ?string, photo: ?array}
+     */
+    public function testimonial(Testimonial $testimonial): array
+    {
+        return [
+            'quote' => $testimonial->quote,
+            'author_name' => $testimonial->author_name,
+            'author_title' => $testimonial->author_title,
+            'organization' => $testimonial->organization,
+            'photo' => MediaPresenter::present($testimonial->photo),
+        ];
+    }
+
+    /**
+     * @return array{question: string, answer: string}
+     */
+    public function faq(Faq $faq): array
+    {
+        return [
+            'question' => $faq->question,
+            'answer' => $faq->answer,
         ];
     }
 

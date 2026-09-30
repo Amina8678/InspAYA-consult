@@ -5,7 +5,22 @@
     $contact = data_get($settings, 'contact', []);
     $privacyUrl = collect($footer['legal'] ?? [])->firstWhere('url', route('privacy-policy'))['url'] ?? null;
     $fieldOrder = ['name', 'email', 'phone', 'organization', 'subject', 'message', 'consent', 'website'];
+    $faqSchema = empty($faqs) ? null : array_filter([
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => collect($faqs)->map(fn ($faq) => [
+            '@type' => 'Question',
+            'name' => $faq['question'],
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => $faq['answer']],
+        ])->all(),
+    ]);
 @endphp
+
+@if ($faqSchema)
+    @push('head')
+        <script type="application/ld+json" nonce="{{ $cspNonce ?? '' }}">@json($faqSchema)</script>
+    @endpush
+@endif
 
 @section('content')
     @include('public.partials.page-hero', [
@@ -111,4 +126,23 @@
             </section>
         </div>
     </div>
+
+    @if ($faqs)
+        <div class="section">
+            <div class="container text-block">
+                <section aria-labelledby="faq-heading">
+                    <p class="eyebrow">FAQ</p>
+                    <h2 id="faq-heading">Frequently asked questions</h2>
+                    <div class="accordion">
+                        @foreach ($faqs as $faq)
+                            <details class="accordion__item">
+                                <summary>{{ $faq['question'] }}</summary>
+                                <p class="prose">{{ $faq['answer'] }}</p>
+                            </details>
+                        @endforeach
+                    </div>
+                </section>
+            </div>
+        </div>
+    @endif
 @endsection

@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\BlogPost;
 use App\Models\Consultant;
 use App\Models\CoreValue;
+use App\Models\Faq;
 use App\Models\Page;
 use App\Models\Service;
+use App\Models\Testimonial;
 use App\Support\SiteSettings;
 use App\View\Presenters\ContentPresenter;
 use Illuminate\Contracts\View\View;
@@ -44,6 +46,11 @@ class PageController extends Controller
             'insights' => BlogPost::query()->published()->with(InsightController::SUMMARY_RELATIONS)
                 ->latest('published_at')->limit(self::HOME_INSIGHTS)->get()
                 ->map(fn (BlogPost $p) => $this->presenter->postSummary($p))->all(),
+            // Trust indicators (FR-HOME-07): shown only "when supplied by the
+            // client" — an empty list hides the section entirely, never a
+            // placeholder empty state.
+            'testimonials' => Testimonial::query()->active()->ordered()->with('photo')->get()
+                ->map(fn (Testimonial $t) => $this->presenter->testimonial($t))->all(),
             'seo' => $presented['seo']
                 ?? $this->presenter->seo(app(SiteSettings::class)->get('seo.default_title'), canonicalUrl: route('home')),
         ]);
@@ -69,6 +76,12 @@ class PageController extends Controller
 
         return view('public.contact', [
             'page' => $presented,
+            // Placement decision (stage 17, SRS §1.4 mentions FAQs with no
+            // placement — not in Appendix A's site map): here, not a new
+            // page, so answering common questions doesn't require a new nav
+            // item and naturally sits next to the form it would deflect.
+            'faqs' => Faq::query()->active()->ordered()->get()
+                ->map(fn (Faq $f) => $this->presenter->faq($f))->all(),
             'seo' => $presented['seo'] ?? $this->presenter->seo(
                 $this->presenter->pageTitle('Contact'),
                 canonicalUrl: route('contact'),
