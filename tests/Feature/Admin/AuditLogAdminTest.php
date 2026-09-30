@@ -8,6 +8,7 @@ use App\Models\BlogPost;
 use App\Models\ContactSubmission;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\AuditLogPresenter;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -272,5 +273,32 @@ class AuditLogAdminTest extends TestCase
         $this->assertStringContainsString('Deactivate Me', $html);
         // The enquiry entry never shows the visitor's own name/subject (stage 7).
         $this->assertStringContainsString('Enquiry #'.$submission->id, $html);
+    }
+
+    /**
+     * Every literal action string ever passed to AuditLogger::record() must
+     * be in AuditLogPresenter::ACTIONS, or it's silently unfilterable in the
+     * audit log UI — 'exported' and 'password_reset_link_sent' were missing
+     * this way for a stage before this test existed.
+     */
+    public function test_every_audit_action_used_in_the_app_is_a_known_filter_option(): void
+    {
+        $used = [];
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path()));
+
+        foreach ($files as $file) {
+            if (! str_ends_with($file->getFilename(), '.php')) {
+                continue;
+            }
+
+            preg_match_all("/->record\(\s*'([a-z_]+)'/", file_get_contents($file->getPathname()), $matches);
+            $used = array_merge($used, $matches[1]);
+        }
+
+        $this->assertNotEmpty($used, 'Expected to find at least one ->record(...) call under app/.');
+
+        foreach (array_unique($used) as $action) {
+            $this->assertContains($action, AuditLogPresenter::ACTIONS, "\"{$action}\" is used but missing from AuditLogPresenter::ACTIONS.");
+        }
     }
 }
