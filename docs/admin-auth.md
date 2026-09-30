@@ -90,6 +90,37 @@ simply never picked up. This is a launch-day failure mode with zero
 diagnostic signal of its own — confirm a queue worker is running as part of
 the deployment checklist, not after someone reports a missing email.
 
+### Scheduled publishing
+
+FR-BLOG-02's "scheduled publication" needs no queue worker and no new
+infrastructure to work at all: `BlogPost::scopePublished()` is a plain query
+filter (`status = published AND published_at <= now()`), evaluated fresh on
+every request, so a post picking a future publish date already goes live on
+its own the moment that time passes — nothing has to run for visibility.
+
+What genuinely needs the scheduler is `App\Console\Commands\AnnounceScheduledPosts`
+(`posts:announce-scheduled`, registered in `routes/console.php`): it records
+an audit-log entry for the actual moment a scheduled post becomes public
+(distinct from the moment an admin scheduled it, which may have been logged
+days earlier — NFR-SEC-07 wants that publication event on record even when
+nobody was at a keyboard for it) and clears the sitemap cache so a scheduled
+post's URL appears immediately instead of waiting out the normal 5-minute
+TTL (`SeoController::CACHE_SECONDS`). Idempotent: it checks each post's own
+audit trail before recording, so a missed run or a restart never double-fires.
+
+**`php artisan schedule:run` must run every minute in production** — Laravel's
+scheduler is not a daemon; a single cron entry drives it:
+
+```
+* * * * * cd /path-to-app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Left unset, `posts:announce-scheduled` (and any future scheduled command)
+simply never runs — which, per the paragraph above, does **not** stop
+scheduled posts from actually publishing on time, only from getting an
+audit entry and an immediately-fresh sitemap. This is a real but low-severity
+gap if missed, unlike the queue worker above.
+
 ---
 
 ## 4. Authorization

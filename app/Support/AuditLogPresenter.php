@@ -41,6 +41,7 @@ class AuditLogPresenter
         'note_created', 'note_updated', 'note_deleted', 'settings_updated',
         'exported', 'password_reset_link_sent',
         'revision_submitted', 'revision_approved', 'revision_rejected',
+        'went_live',
     ];
 
     /** route() name for each entity type's edit (or, for an enquiry, show) page. */
