@@ -10,6 +10,7 @@ use App\Models\Consultant;
 use App\Models\ContactSubmission;
 use App\Models\ContactSubmissionNote;
 use App\Models\CoreValue;
+use App\Models\Faq;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\Permission;
@@ -17,6 +18,7 @@ use App\Models\Role;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Tag;
+use App\Models\Testimonial;
 use App\Models\User;
 use App\Support\SiteSettings;
 use App\View\Composers\SiteLayoutComposer;
@@ -118,6 +120,7 @@ class AppServiceProvider extends ServiceProvider
             'contact_submission' => ContactSubmission::class,
             'contact_submission_note' => ContactSubmissionNote::class,
             'core_value' => CoreValue::class,
+            'faq' => Faq::class,
             'media' => Media::class,
             'page' => Page::class,
             'permission' => Permission::class,
@@ -125,6 +128,7 @@ class AppServiceProvider extends ServiceProvider
             'service' => Service::class,
             'site_setting' => SiteSetting::class,
             'tag' => Tag::class,
+            'testimonial' => Testimonial::class,
             'user' => User::class,
         ]);
     }

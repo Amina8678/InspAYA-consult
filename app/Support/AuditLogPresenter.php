@@ -25,10 +25,12 @@ class AuditLogPresenter
         'consultant' => 'Consultant',
         'contact_submission' => 'Enquiry',
         'core_value' => 'Core value',
+        'faq' => 'FAQ',
         'media' => 'Media file',
         'page' => 'Page',
         'service' => 'Service',
         'tag' => 'Tag',
+        'testimonial' => 'Testimonial',
         'user' => 'User',
     ];
 
@@ -51,10 +53,12 @@ class AuditLogPresenter
         'consultant' => 'admin.consultants.edit',
         'contact_submission' => 'admin.enquiries.show',
         'core_value' => 'admin.core-values.edit',
+        'faq' => 'admin.faqs.edit',
         'media' => 'admin.media.edit',
         'page' => 'admin.pages.edit',
         'service' => 'admin.services.edit',
         'tag' => 'admin.tags.edit',
+        'testimonial' => 'admin.testimonials.edit',
         'user' => 'admin.users.edit',
     ];
 
@@ -73,6 +77,8 @@ class AuditLogPresenter
         'consultant' => 'name',
         'user' => 'name',
         'media' => 'file_name',
+        'testimonial' => 'author_name',
+        'faq' => 'question',
     ];
 
     /** Actions performed by a visitor who was never signed in, even when a targeted account is recorded. */

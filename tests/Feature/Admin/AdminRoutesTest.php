@@ -9,12 +9,14 @@ use App\Models\Consultant;
 use App\Models\ContactSubmission;
 use App\Models\ContactSubmissionNote;
 use App\Models\CoreValue;
+use App\Models\Faq;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\PendingRevision;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\Tag;
+use App\Models\Testimonial;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -96,6 +98,22 @@ class AdminRoutesTest extends TestCase
             'core value move' => ['POST', '/admin/core-values/:value/move', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'core value delete confirm' => ['GET', '/admin/core-values/:value/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'core value destroy' => ['DELETE', '/admin/core-values/:value', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'testimonials list' => ['GET', '/admin/testimonials', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'testimonial create page' => ['GET', '/admin/testimonials/create', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'testimonial store' => ['POST', '/admin/testimonials', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'testimonial edit' => ['GET', '/admin/testimonials/:testimonial/edit', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'testimonial update' => ['PUT', '/admin/testimonials/:testimonial', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'testimonial move' => ['POST', '/admin/testimonials/:testimonial/move', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'testimonial delete confirm' => ['GET', '/admin/testimonials/:testimonial/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'testimonial destroy' => ['DELETE', '/admin/testimonials/:testimonial', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'faqs list' => ['GET', '/admin/faqs', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'faq create page' => ['GET', '/admin/faqs/create', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'faq store' => ['POST', '/admin/faqs', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'faq edit' => ['GET', '/admin/faqs/:faq/edit', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 200],
+            'faq update' => ['PUT', '/admin/faqs/:faq', ['super-admin', 'administrator', 'editor'], ['author', self::NONE], 302],
+            'faq move' => ['POST', '/admin/faqs/:faq/move', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'faq delete confirm' => ['GET', '/admin/faqs/:faq/delete', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'faq destroy' => ['DELETE', '/admin/faqs/:faq', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             // Posts: everyone who writes posts can list and create (all four
             // seeded roles have posts.create); editing/deleting a post nobody
             // here owns needs posts.edit-any/posts.delete, so Authors (own
@@ -156,6 +174,7 @@ class AdminRoutesTest extends TestCase
         ':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}', ':page' => '{page}',
         ':post' => '{post}', ':category' => '{category}', ':tag' => '{tag}', ':submission' => '{submission}', ':note' => '{note}',
         ':user' => '{user}', ':auditLog' => '{auditLog}', ':pendingRevision' => '{pendingRevision}',
+        ':testimonial' => '{testimonial}', ':faq' => '{faq}',
     ];
 
     private function hit(string $method, string $path)
@@ -176,6 +195,8 @@ class AdminRoutesTest extends TestCase
         $targetUser = User::factory()->create();
         $auditLog = AuditLog::factory()->create();
         $pendingRevision = PendingRevision::factory()->create();
+        $testimonial = Testimonial::factory()->create();
+        $faq = Faq::factory()->create();
 
         // Invalid/empty payloads: the point is authorization, not success.
         $uri = strtr($path, [
@@ -185,6 +206,7 @@ class AdminRoutesTest extends TestCase
             ':category' => (string) $category->id, ':tag' => (string) $tag->id,
             ':submission' => (string) $submission->id, ':note' => (string) $note->id,
             ':user' => (string) $targetUser->id, ':auditLog' => (string) $auditLog->id,
+            ':testimonial' => (string) $testimonial->id, ':faq' => (string) $faq->id,
             ':pendingRevision' => (string) $pendingRevision->id,
         ]);
 

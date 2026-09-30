@@ -9,12 +9,14 @@ use App\Http\Controllers\Admin\ContactSubmissionController;
 use App\Http\Controllers\Admin\ContactSubmissionNoteController;
 use App\Http\Controllers\Admin\CoreValueController as AdminCoreValueController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\PendingRevisionController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\TagController;
+use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -134,6 +136,30 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::post('/core-values/{coreValue}/move', [AdminCoreValueController::class, 'move'])->middleware('permission:values.manage')->name('core-values.move');
     Route::get('/core-values/{coreValue}/delete', [AdminCoreValueController::class, 'confirmDelete'])->middleware('permission:values.manage')->name('core-values.delete');
     Route::delete('/core-values/{coreValue}', [AdminCoreValueController::class, 'destroy'])->middleware('permission:values.manage')->name('core-values.destroy');
+
+    // Testimonials (stage 17, SRS §1.4 / FR-HOME-07). Editors: list and edit
+    // content; Admin+: create, delete, reorder, activate (same EditOrManage
+    // pattern as core values).
+    Route::get('/testimonials', [TestimonialController::class, 'index'])->middleware('permission:testimonials.edit|testimonials.manage')->name('testimonials.index');
+    Route::get('/testimonials/create', [TestimonialController::class, 'create'])->middleware('permission:testimonials.manage')->name('testimonials.create');
+    Route::post('/testimonials', [TestimonialController::class, 'store'])->middleware('permission:testimonials.manage')->name('testimonials.store');
+    Route::get('/testimonials/{testimonial}/edit', [TestimonialController::class, 'edit'])->middleware('permission:testimonials.edit|testimonials.manage')->name('testimonials.edit');
+    Route::put('/testimonials/{testimonial}', [TestimonialController::class, 'update'])->middleware('permission:testimonials.edit|testimonials.manage')->name('testimonials.update');
+    Route::post('/testimonials/{testimonial}/move', [TestimonialController::class, 'move'])->middleware('permission:testimonials.manage')->name('testimonials.move');
+    Route::get('/testimonials/{testimonial}/delete', [TestimonialController::class, 'confirmDelete'])->middleware('permission:testimonials.manage')->name('testimonials.delete');
+    Route::delete('/testimonials/{testimonial}', [TestimonialController::class, 'destroy'])->middleware('permission:testimonials.manage')->name('testimonials.destroy');
+
+    // FAQs (stage 17, SRS §1.4). Editors: list and edit content; Admin+:
+    // create, delete, reorder, activate (same EditOrManage pattern as core
+    // values).
+    Route::get('/faqs', [FaqController::class, 'index'])->middleware('permission:faqs.edit|faqs.manage')->name('faqs.index');
+    Route::get('/faqs/create', [FaqController::class, 'create'])->middleware('permission:faqs.manage')->name('faqs.create');
+    Route::post('/faqs', [FaqController::class, 'store'])->middleware('permission:faqs.manage')->name('faqs.store');
+    Route::get('/faqs/{faq}/edit', [FaqController::class, 'edit'])->middleware('permission:faqs.edit|faqs.manage')->name('faqs.edit');
+    Route::put('/faqs/{faq}', [FaqController::class, 'update'])->middleware('permission:faqs.edit|faqs.manage')->name('faqs.update');
+    Route::post('/faqs/{faq}/move', [FaqController::class, 'move'])->middleware('permission:faqs.manage')->name('faqs.move');
+    Route::get('/faqs/{faq}/delete', [FaqController::class, 'confirmDelete'])->middleware('permission:faqs.manage')->name('faqs.delete');
+    Route::delete('/faqs/{faq}', [FaqController::class, 'destroy'])->middleware('permission:faqs.manage')->name('faqs.destroy');
 
     // Blog posts (FR-BLOG, FR-ADM-08). Everyone who writes posts can list
     // and create; editing needs posts.edit-own|posts.edit-any (BlogPostPolicy

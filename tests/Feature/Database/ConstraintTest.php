@@ -16,6 +16,7 @@ use App\Models\Role;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Tag;
+use App\Models\Testimonial;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -133,6 +134,7 @@ class ConstraintTest extends TestCase
         $consultant = Consultant::factory()->create(['photo_id' => $media->id]);
         $value = CoreValue::factory()->create(['icon_id' => $media->id]);
         $setting = SiteSetting::factory()->media()->create(['media_id' => $media->id]);
+        $testimonial = Testimonial::factory()->create(['photo_id' => $media->id]);
 
         $media->delete();
 
@@ -140,6 +142,7 @@ class ConstraintTest extends TestCase
         $this->assertNull($consultant->fresh()->photo_id);
         $this->assertNull($value->fresh()->icon_id);
         $this->assertNull($setting->fresh()->media_id);
+        $this->assertNull($testimonial->fresh()->photo_id);
     }
 
     public function test_deleting_a_user_without_posts_nulls_attribution_but_keeps_records(): void

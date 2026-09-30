@@ -21,6 +21,8 @@
         ['label' => 'Services', 'route' => 'admin.services.index', 'match' => 'admin.services.*', 'show' => $user->can('viewAny', App\Models\Service::class)],
         ['label' => 'Consultants', 'route' => 'admin.consultants.index', 'match' => 'admin.consultants.*', 'show' => $user->can('viewAny', App\Models\Consultant::class)],
         ['label' => 'Core values', 'route' => 'admin.core-values.index', 'match' => 'admin.core-values.*', 'show' => $user->can('viewAny', App\Models\CoreValue::class)],
+        ['label' => 'Testimonials', 'route' => 'admin.testimonials.index', 'match' => 'admin.testimonials.*', 'show' => $user->can('viewAny', App\Models\Testimonial::class)],
+        ['label' => 'FAQs', 'route' => 'admin.faqs.index', 'match' => 'admin.faqs.*', 'show' => $user->can('viewAny', App\Models\Faq::class)],
         ['label' => 'Blog posts', 'route' => 'admin.posts.index', 'match' => 'admin.posts.*', 'show' => $user->can('viewAny', App\Models\BlogPost::class)],
         ['label' => 'Categories', 'route' => 'admin.categories.index', 'match' => 'admin.categories.*', 'show' => $user->can('viewAny', App\Models\Category::class)],
         ['label' => 'Tags', 'route' => 'admin.tags.index', 'match' => 'admin.tags.*', 'show' => $user->can('viewAny', App\Models\Tag::class)],
