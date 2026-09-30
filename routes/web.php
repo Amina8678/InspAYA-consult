@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\CoreValueController as AdminCoreValueController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
+use App\Http\Controllers\Admin\PendingRevisionController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\TagController;
@@ -198,6 +199,14 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     // Site settings (FR-ADM-13).
     Route::get('/settings', [SiteSettingsController::class, 'edit'])->middleware('permission:settings.manage')->name('settings.edit');
     Route::put('/settings', [SiteSettingsController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');
+
+    // Content approval queue (stage 16): pending edits to already-live pages
+    // and posts, from someone without content.publish. Gated the same as
+    // publishing itself.
+    Route::get('/content-approvals', [PendingRevisionController::class, 'index'])->middleware('permission:content.publish')->name('content-approvals.index');
+    Route::get('/content-approvals/{pendingRevision}', [PendingRevisionController::class, 'show'])->middleware('permission:content.publish')->name('content-approvals.show');
+    Route::post('/content-approvals/{pendingRevision}/approve', [PendingRevisionController::class, 'approve'])->middleware('permission:content.publish')->name('content-approvals.approve');
+    Route::post('/content-approvals/{pendingRevision}/reject', [PendingRevisionController::class, 'reject'])->middleware('permission:content.publish')->name('content-approvals.reject');
 
     // Audit log (NFR-SEC-07, plan §6 row 32). Read-only: no create, edit or
     // delete route, matching AuditLog's model-level immutability (D9).

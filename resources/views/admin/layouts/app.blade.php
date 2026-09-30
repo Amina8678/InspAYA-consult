@@ -9,6 +9,10 @@
     // enquiries.view never pays for the query.
     $canViewEnquiries = $user->can('viewAny', App\Models\ContactSubmission::class);
     $newEnquiries = $canViewEnquiries ? App\Models\ContactSubmission::where('status', App\Enums\EnquiryStatus::New)->count() : 0;
+    // content.publish, not a dedicated policy call: reviewing a pending
+    // revision is gated exactly like publishing itself (stage 16).
+    $canReviewContent = $user->can('content.publish');
+    $pendingRevisions = $canReviewContent ? App\Models\PendingRevision::query()->pending()->count() : 0;
 
     $navItems = array_values(array_filter([
         ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'show' => true],
@@ -21,6 +25,7 @@
         ['label' => 'Categories', 'route' => 'admin.categories.index', 'match' => 'admin.categories.*', 'show' => $user->can('viewAny', App\Models\Category::class)],
         ['label' => 'Tags', 'route' => 'admin.tags.index', 'match' => 'admin.tags.*', 'show' => $user->can('viewAny', App\Models\Tag::class)],
         ['label' => 'Enquiries'.($newEnquiries > 0 ? " ({$newEnquiries} new)" : ''), 'route' => 'admin.enquiries.index', 'match' => 'admin.enquiries.*', 'show' => $canViewEnquiries],
+        ['label' => 'Content approvals'.($pendingRevisions > 0 ? " ({$pendingRevisions} pending)" : ''), 'route' => 'admin.content-approvals.index', 'match' => 'admin.content-approvals.*', 'show' => $canReviewContent],
         ['label' => 'Users', 'route' => 'admin.users.index', 'match' => 'admin.users.*', 'show' => $user->can('viewAny', App\Models\User::class)],
         ['label' => 'Site settings', 'route' => 'admin.settings.edit', 'match' => 'admin.settings.*', 'show' => $user->can('settings.manage')],
         ['label' => 'Audit log', 'route' => 'admin.audit-logs.index', 'match' => 'admin.audit-logs.*', 'show' => $user->can('viewAny', App\Models\AuditLog::class)],
