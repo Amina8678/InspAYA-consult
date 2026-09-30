@@ -7,12 +7,14 @@ use App\Enums\SettingType;
 use App\Models\BlogPost;
 use App\Models\Consultant;
 use App\Models\CoreValue;
+use App\Models\Faq;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\SiteSetting;
+use App\Models\Testimonial;
 use App\Models\User;
 use Database\Seeders\CoreValueSeeder;
 use Database\Seeders\DatabaseSeeder;
@@ -150,9 +152,9 @@ class SeederTest extends TestCase
         $granted = fn (string $role) => Role::firstWhere('slug', $role)->permissions->pluck('slug');
 
         $this->assertSame(4, Role::count());
-        $this->assertSame(32, Permission::count());
-        $this->assertCount(32, $granted('super-admin'));
-        $this->assertCount(31, $granted('administrator'));
+        $this->assertSame(36, Permission::count());
+        $this->assertCount(36, $granted('super-admin'));
+        $this->assertCount(35, $granted('administrator'));
         $this->assertNotContains('roles.manage', $granted('administrator'));
         $this->assertContains('content.publish', $granted('administrator'));
 
@@ -213,12 +215,17 @@ class SeederTest extends TestCase
         $this->assertSame(5, Page::count());
         $this->assertSame(4, Consultant::count());
         $this->assertSame(5, BlogPost::count());
+        $this->assertSame(2, Testimonial::count());
+        $this->assertSame(3, Faq::count());
 
         $this->assertSame(0, Media::count());
         $this->assertSame(0, BlogPost::whereNotNull('featured_image_id')->count());
         $this->assertSame(0, Consultant::whereNotNull('photo_id')->count());
         $this->assertSame(0, CoreValue::whereNotNull('icon_id')->count());
+        $this->assertSame(0, Testimonial::whereNotNull('photo_id')->count());
         $this->assertSame(0, SiteSetting::whereNotNull('media_id')->count());
+        Testimonial::all()->each(fn (Testimonial $t) => $this->assertStringContainsString('[PLACEHOLDER]', $t->quote));
+        Faq::all()->each(fn (Faq $f) => $this->assertStringContainsString('[PLACEHOLDER]', $f->question));
         $this->assertStringNotContainsString('storage/', json_encode(Page::pluck('structured_content')));
         $this->assertStringNotContainsString('asset/images', json_encode(Page::pluck('structured_content')));
 
@@ -250,7 +257,7 @@ class SeederTest extends TestCase
         $this->assertSame(6, CoreValue::count());
         $this->assertGreaterThan(0, SiteSetting::count());
 
-        foreach (['consultants', 'service_consultant', 'categories', 'tags', 'blog_posts', 'blog_post_tag', 'media'] as $table) {
+        foreach (['consultants', 'service_consultant', 'categories', 'tags', 'blog_posts', 'blog_post_tag', 'media', 'testimonials', 'faqs'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }
     }

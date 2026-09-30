@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use Database\Seeders\Demo\BlogSeeder;
 use Database\Seeders\Demo\ConsultantSeeder;
+use Database\Seeders\Demo\FaqSeeder;
 use Database\Seeders\Demo\PageSeeder;
+use Database\Seeders\Demo\TestimonialSeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -44,6 +46,8 @@ class DatabaseSeeder extends Seeder
             PageSeeder::class,
             ConsultantSeeder::class,
             BlogSeeder::class,
+            TestimonialSeeder::class,
+            FaqSeeder::class,
         ]);
     }
 }
