@@ -11,6 +11,7 @@ use App\Models\ContactSubmissionNote;
 use App\Models\CoreValue;
 use App\Models\Media;
 use App\Models\Page;
+use App\Models\PendingRevision;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\Tag;
@@ -141,6 +142,10 @@ class AdminRoutesTest extends TestCase
             'user edit' => ['GET', '/admin/users/:user/edit', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'user update' => ['PUT', '/admin/users/:user', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'user reset password' => ['POST', '/admin/users/:user/reset-password', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'content approvals list' => ['GET', '/admin/content-approvals', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'content approval show' => ['GET', '/admin/content-approvals/:pendingRevision', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
+            'content approval approve' => ['POST', '/admin/content-approvals/:pendingRevision/approve', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'content approval reject' => ['POST', '/admin/content-approvals/:pendingRevision/reject', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'audit logs list' => ['GET', '/admin/audit-logs', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'audit log show' => ['GET', '/admin/audit-logs/:auditLog', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
         ];
@@ -150,7 +155,7 @@ class AdminRoutesTest extends TestCase
     private const PLACEHOLDERS = [
         ':media' => '{media}', ':value' => '{coreValue}', ':service' => '{service}', ':consultant' => '{consultant}', ':page' => '{page}',
         ':post' => '{post}', ':category' => '{category}', ':tag' => '{tag}', ':submission' => '{submission}', ':note' => '{note}',
-        ':user' => '{user}', ':auditLog' => '{auditLog}',
+        ':user' => '{user}', ':auditLog' => '{auditLog}', ':pendingRevision' => '{pendingRevision}',
     ];
 
     private function hit(string $method, string $path)
@@ -170,6 +175,7 @@ class AdminRoutesTest extends TestCase
         // administrator) generically passes the target-acting-on checks.
         $targetUser = User::factory()->create();
         $auditLog = AuditLog::factory()->create();
+        $pendingRevision = PendingRevision::factory()->create();
 
         // Invalid/empty payloads: the point is authorization, not success.
         $uri = strtr($path, [
@@ -179,6 +185,7 @@ class AdminRoutesTest extends TestCase
             ':category' => (string) $category->id, ':tag' => (string) $tag->id,
             ':submission' => (string) $submission->id, ':note' => (string) $note->id,
             ':user' => (string) $targetUser->id, ':auditLog' => (string) $auditLog->id,
+            ':pendingRevision' => (string) $pendingRevision->id,
         ]);
 
         return $this->from('/admin')->call($method, $uri, ['alt_text' => 'x']);

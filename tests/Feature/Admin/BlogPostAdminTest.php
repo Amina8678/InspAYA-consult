@@ -142,10 +142,13 @@ class BlogPostAdminTest extends TestCase
         $this->put(route('admin.posts.update', $review), $this->payload(['status' => 'draft']))->assertSessionHasNoErrors();
         $this->assertSame(PostStatus::Draft, $review->fresh()->status);
 
-        // Editors may still edit the content of an already-published post…
+        // An edit to an already-published post is never applied directly
+        // (stage 16, content approval workflow) — see ContentApprovalTest
+        // for the full submit/approve/reject flow. Here it's enough to
+        // confirm the live post is untouched by this controller path.
         $this->put(route('admin.posts.update', $published), $this->payload(['title' => 'Edited while live']))->assertSessionHasNoErrors();
-        $this->assertSame('Edited while live', $published->fresh()->title);
-        // …but a crafted attempt to change its status is silently ignored, not applied.
+        $this->assertSame('Live already', $published->fresh()->title);
+        // A crafted attempt to change its status is still silently ignored, not applied.
         $this->put(route('admin.posts.update', $published), $this->payload(['title' => 'Edited while live', 'status' => 'draft']))
             ->assertSessionHasNoErrors();
         $this->assertSame(PostStatus::Published, $published->fresh()->status);

@@ -43,10 +43,17 @@ class PageOgImageTest extends TestCase
 
     public function test_the_migration_rolls_back_cleanly(): void
     {
-        $this->artisan('migrate:rollback', ['--step' => 1])->assertSuccessful();
+        // Calls this migration's own up()/down() directly rather than
+        // `artisan migrate:rollback --step=1`: rollback picks the most
+        // recent batch by table order regardless of --path, so it would
+        // silently start rolling back whatever migration is added most
+        // recently elsewhere instead of this one.
+        $migration = require database_path('migrations/2026_09_29_000001_add_og_image_id_to_pages_table.php');
+
+        $migration->down();
         $this->assertFalse(Schema::hasColumn('pages', 'og_image_id'));
 
-        $this->artisan('migrate')->assertSuccessful();
+        $migration->up();
         $this->assertTrue(Schema::hasColumn('pages', 'og_image_id'));
     }
 }
