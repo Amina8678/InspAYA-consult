@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 /**
  * structured_content is an ordered list of section blocks:
@@ -71,5 +72,19 @@ class Page extends Model
     public function ogImage(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'og_image_id');
+    }
+
+    /**
+     * This record's most recent pending revision, whatever its status
+     * (stage 16). A resubmission after a rejection creates a new row rather
+     * than reusing the rejected one, so "most recent" is what actually
+     * reflects the current state: pending (awaiting review), rejected (needs
+     * the Editor's attention) or approved/none (nothing outstanding).
+     *
+     * @return MorphOne<PendingRevision, $this>
+     */
+    public function currentRevision(): MorphOne
+    {
+        return $this->morphOne(PendingRevision::class, 'revisable')->latestOfMany();
     }
 }
