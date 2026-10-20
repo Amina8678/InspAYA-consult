@@ -58,10 +58,11 @@ jobs:
 
       # phpunit.xml already points DB_CONNECTION at sqlite/:memory: for the
       # testing environment, so no database setup is needed here.
-      # No --fail-on-skipped here (unlike the MySQL job): SortOrderTest's row
-      # lock test permanently and legitimately skips on SQLite (FOR UPDATE is
-      # a MySQL-only concept), so this job always has exactly one intentional
-      # skip. That test still runs for real on the MySQL job below, where the
+      # No --fail-on-skipped here (unlike the MySQL job): two row-lock tests
+      # (SortOrderTest and ContentApprovalTest) permanently and legitimately
+      # skip on SQLite (FOR UPDATE is a MySQL-only concept), so this job
+      # always has exactly two intentional skips. Those tests still run for
+      # real on the MySQL job below, where the
       # flag stays on to catch any other, genuinely accidental skip.
       - name: Run test suite (SQLite)
         run: composer test
