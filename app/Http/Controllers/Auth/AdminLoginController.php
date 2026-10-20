@@ -11,6 +11,7 @@ use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -30,6 +31,8 @@ class AdminLoginController extends Controller
     public const MAX_ATTEMPTS = 5;
 
     public const DECAY_SECONDS = 60;
+
+    public const AUDIT_FAILED_WINDOW_SECONDS = 60;
 
     public const FAILED_MESSAGE = 'These credentials do not match our records.';
 
@@ -51,7 +54,9 @@ class AdminLoginController extends Controller
         $key = $this->throttleKey($email, $request);
 
         if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
-            $this->audit->record(AuditLogger::LOGIN_THROTTLED, new: ['email' => $email]);
+            // One row per throttle window, however many requests arrive in it.
+            $this->recordOnce('throttled|'.$key, max(1, RateLimiter::availableIn($key)),
+                fn () => $this->audit->record(AuditLogger::LOGIN_THROTTLED, new: ['email' => $email]));
 
             throw new ThrottleRequestsException(
                 'Too many login attempts. Please try again later.',
@@ -64,7 +69,10 @@ class AdminLoginController extends Controller
 
         if ($reason !== null) {
             RateLimiter::hit($key, self::DECAY_SECONDS);
-            $this->audit->record(AuditLogger::LOGIN_FAILED, $user, $user, new: ['email' => $email, 'reason' => $reason]);
+            // At most one row per email + IP per minute (the throttle itself
+            // still counts every attempt).
+            $this->recordOnce('failed|'.$key, self::AUDIT_FAILED_WINDOW_SECONDS,
+                fn () => $this->audit->record(AuditLogger::LOGIN_FAILED, $user, $user, new: ['email' => $email, 'reason' => $reason]));
 
             throw ValidationException::withMessages(['email' => self::FAILED_MESSAGE]);
         }
@@ -119,6 +127,17 @@ class AdminLoginController extends Controller
         }
 
         return $user->status === UserStatus::Active ? null : 'inactive';
+    }
+
+    /**
+     * Runs $record unless one already ran for $key inside the window.
+     * Cache::add() is atomic, so concurrent requests cannot both pass.
+     */
+    private function recordOnce(string $key, int $seconds, callable $record): void
+    {
+        if (Cache::add('audit-once|'.hash('sha256', $key), true, $seconds)) {
+            $record();
+        }
     }
 
     private function throttleKey(string $email, Request $request): string

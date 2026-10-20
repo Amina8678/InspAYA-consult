@@ -176,4 +176,45 @@ class AdminLoginTest extends TestCase
 
         $this->assertFalse(Hash::needsRehash($user->fresh()->password));
     }
+
+    public function test_repeated_failures_write_at_most_one_login_failed_row_per_email_and_ip_per_minute(): void
+    {
+        $this->user();
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->attempt(password: 'wrong-password')->assertSessionHasErrors('email');
+        }
+        $this->assertSame(1, AuditLog::where('action', 'login_failed')->count());
+
+        // A different email is a different key.
+        $this->attempt('someone-else@example.com', 'wrong-password');
+        $this->assertSame(2, AuditLog::where('action', 'login_failed')->count());
+
+        // The window passes: the same email + IP is recorded again.
+        $this->travel(AdminLoginController::AUDIT_FAILED_WINDOW_SECONDS + 1)->seconds();
+        $this->attempt(password: 'wrong-password');
+        $this->assertSame(3, AuditLog::where('action', 'login_failed')->count());
+    }
+
+    public function test_requests_while_throttled_write_one_login_throttled_row_per_window(): void
+    {
+        $this->user();
+        for ($i = 0; $i < AdminLoginController::MAX_ATTEMPTS; $i++) {
+            $this->attempt(password: 'wrong-password');
+        }
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->attempt(password: 'wrong-password')->assertStatus(429);
+        }
+        $this->assertSame(1, AuditLog::where('action', 'login_throttled')->count());
+
+        // Next window: throttled again, one more row.
+        $this->travel(AdminLoginController::DECAY_SECONDS + 1)->seconds();
+        for ($i = 0; $i < AdminLoginController::MAX_ATTEMPTS; $i++) {
+            $this->attempt(password: 'wrong-password');
+        }
+        $this->attempt(password: 'wrong-password')->assertStatus(429);
+        $this->attempt(password: 'wrong-password')->assertStatus(429);
+        $this->assertSame(2, AuditLog::where('action', 'login_throttled')->count());
+    }
 }
