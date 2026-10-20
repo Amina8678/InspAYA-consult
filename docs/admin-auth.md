@@ -177,6 +177,20 @@ stage (`ForceHttps`, `SecurityHeaders` middleware, applied to every request in
   script) carries the per-request nonce shared as `$cspNonce` — see the three
   JSON-LD blocks (Organization/Article/Service) for the pattern.
 
+### HSTS
+
+`SecurityHeaders` sends `Strict-Transport-Security: max-age=604800` (one week)
+on HTTPS responses only; plain-http responses never carry it. It deliberately
+has **no `includeSubDomains`** (nothing in this repo knows whether other
+subdomains of the domain serve HTTPS, and a wrong guess locks browsers out of
+them for the whole max-age) and **no `preload`** (effectively irreversible).
+
+The short max-age is a safety margin for the first weeks. **Once HTTPS is
+confirmed stable in production, raise it** via `HSTS_MAX_AGE` in `.env`
+(e.g. `2592000` for 30 days, then `31536000` for a year), then re-cache config
+if `config:cache` is in use. Add `includeSubDomains` only after checking every
+subdomain; that needs a code change in `SecurityHeaders`.
+
 ### Trusted proxies
 
 Laravel's `TrustProxies` middleware is already in the app's global middleware

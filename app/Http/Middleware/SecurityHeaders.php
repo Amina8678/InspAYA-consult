@@ -43,6 +43,13 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
+        // HSTS is only meaningful (and only honoured) over HTTPS. No
+        // includeSubDomains and no preload: nothing here knows whether other
+        // subdomains serve HTTPS, and both are hard to undo.
+        if ($request->secure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age='.config('inspaya.hsts_max_age'));
+        }
+
         return $response;
     }
 }

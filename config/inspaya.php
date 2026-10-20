@@ -20,4 +20,17 @@ return [
         'password' => env('SUPER_ADMIN_PASSWORD'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | HSTS max-age (seconds)
+    |--------------------------------------------------------------------------
+    |
+    | Sent as Strict-Transport-Security on HTTPS responses only. Starts at one
+    | week so a mistake is cheap to recover from; raise it via HSTS_MAX_AGE
+    | once HTTPS is confirmed stable (see docs/admin-auth.md).
+    |
+    */
+
+    'hsts_max_age' => (int) env('HSTS_MAX_AGE', 604800),
+
 ];

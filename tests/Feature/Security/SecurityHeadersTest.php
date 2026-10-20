@@ -78,6 +78,29 @@ class SecurityHeadersTest extends TestCase
         $this->assertNotSame($first, $second);
     }
 
+    // HSTS ---------------------------------------------------------------
+
+    public function test_hsts_is_sent_on_a_secure_request_with_a_one_week_max_age_and_no_extras(): void
+    {
+        $header = $this->get('https://localhost/')->assertOk()->headers->get('Strict-Transport-Security');
+
+        $this->assertSame('max-age=604800', $header);
+        $this->assertStringNotContainsString('includeSubDomains', $header);
+        $this->assertStringNotContainsString('preload', $header);
+    }
+
+    public function test_hsts_is_not_sent_over_plain_http(): void
+    {
+        $this->get('http://localhost/')->assertOk()->assertHeaderMissing('Strict-Transport-Security');
+    }
+
+    public function test_hsts_max_age_is_configurable(): void
+    {
+        config(['inspaya.hsts_max_age' => 31536000]);
+
+        $this->get('https://localhost/')->assertHeader('Strict-Transport-Security', 'max-age=31536000');
+    }
+
     // HTTPS redirect ---------------------------------------------------------
 
     public function test_http_is_not_redirected_outside_production(): void
