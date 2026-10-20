@@ -48,6 +48,25 @@ Signed-in users who open the sign-in or reset pages are sent to the dashboard.
 | No account probing | Same error for unknown email / wrong password / inactive account; unknown emails pay the same hashing cost; reset requests always get the same answer. |
 | Audit log | `login`, `login_failed` (with reason: `unknown_email`, `invalid_password`, `inactive`), `login_throttled`, `logout`, `password_changed`, `password_reset_requested`, `password_reset`, with IP and user agent. Passwords and tokens are never logged. |
 
+### Audit log volume and pruning
+
+Failed sign-ins are the one audit event an anonymous visitor can trigger, so
+they are capped: at most **one `login_failed` row per email + IP per minute**,
+and **one `login_throttled` row per throttle window** (the 429 is still
+returned on every request; only the audit row is suppressed). The throttle
+itself still counts every attempt.
+
+`php artisan audit:prune-login-noise` (scheduled daily at 03:30, so it needs the
+`schedule:run` cron below) deletes `login_failed` and `login_throttled` rows
+older than `AUDIT_LOGIN_RETENTION_DAYS` days (default 90; or `--days=N`, whole
+number ≥ 1). `AuditLog` refuses updates and deletes through Eloquent, via
+model events that only fire for model instances. The command deletes with the
+query builder (`DB::table('audit_logs')`), which never boots the model, so
+those events do not run. It can only ever remove those two actions: the list
+is a constant in `PruneLoginAuditNoise::ACTIONS`, applied in both the select
+and the delete, and no option can change it. Every other action is kept
+indefinitely; there is no retention policy for them yet.
+
 ### Password policy
 
 The SRS requires hashing (NFR-SEC-01) but **defines no password rules**. Until

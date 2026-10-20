@@ -33,4 +33,16 @@ return [
 
     'hsts_max_age' => (int) env('HSTS_MAX_AGE', 604800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Login-noise retention (days)
+    |--------------------------------------------------------------------------
+    |
+    | audit:prune-login-noise deletes login_failed and login_throttled audit
+    | rows older than this. No other audit action is ever pruned.
+    |
+    */
+
+    'audit_login_retention_days' => (int) env('AUDIT_LOGIN_RETENTION_DAYS', 90),
+
 ];
