@@ -16,6 +16,7 @@ use Database\Seeders\SiteSettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class EnquiryAdminTest extends TestCase
@@ -303,6 +304,56 @@ class EnquiryAdminTest extends TestCase
         foreach (['Ada Example', 'ada@example.com', 'Example Ltd', 'Governance review', 'Hello there'] as $personal) {
             $this->assertStringNotContainsString($personal, json_encode($log->new_values), "Audit log must not contain \"{$personal}\".");
         }
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function formulaLeaders(): array
+    {
+        return ['equals' => ['='], 'plus' => ['+'], 'minus' => ['-'], 'at' => ['@'], 'tab' => ["\t"], 'carriage return' => ["\r"]];
+    }
+
+    #[DataProvider('formulaLeaders')]
+    public function test_export_neutralises_a_leading_formula_character_in_every_text_field(string $leader): void
+    {
+        $this->as('administrator');
+        ContactSubmission::factory()->create([
+            'name' => $leader.'Name', 'email' => 'a@example.com', 'phone' => $leader.'123',
+            'organization' => $leader.'Org', 'subject' => $leader.'Subject', 'message' => $leader.'Message',
+            'ip_address' => '192.0.2.61',
+        ]);
+
+        $csv = $this->get(route('admin.enquiries.export'))->streamedContent();
+        $rows = array_map('str_getcsv', array_filter(explode("\n", ltrim($csv, "\xEF\xBB\xBF"))));
+        $data = $rows[1];
+
+        foreach ([0, 2, 3, 4, 5] as $column) {
+            $this->assertSame("'".$leader, substr($data[$column], 0, 2), "Column {$column} must be quote-prefixed.");
+        }
+    }
+
+    public function test_export_leaves_normal_values_untouched_and_keeps_multiline_messages(): void
+    {
+        $this->as('administrator');
+        ContactSubmission::factory()->create([
+            'name' => 'Ada Example', 'email' => 'ada@example.com', 'phone' => null,
+            'message' => "Line one\n=not at start\nLine three",
+        ]);
+
+        $csv = $this->get(route('admin.enquiries.export'))->streamedContent();
+        $rows = [];
+        $h = fopen('php://memory', 'r+');
+        fwrite($h, ltrim($csv, "\xEF\xBB\xBF"));
+        rewind($h);
+        while (($r = fgetcsv($h)) !== false) {
+            $rows[] = $r;
+        }
+
+        $this->assertSame('Ada Example', $rows[1][0]);
+        $this->assertSame('ada@example.com', $rows[1][1]);
+        $this->assertSame("Line one\n=not at start\nLine three", $rows[1][5]);
+        $this->assertSame('New', $rows[1][6]);
     }
 
     public function test_export_respects_the_current_search_and_status_filters(): void

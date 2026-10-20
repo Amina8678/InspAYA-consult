@@ -111,11 +111,26 @@ class ContactSubmissionController extends Controller
                     if ($includeIp) {
                         $row[] = $submission->ip_address;
                     }
-                    fputcsv($handle, $row);
+                    fputcsv($handle, array_map(self::neutraliseCsvCell(...), $row));
                 });
 
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Spreadsheet formula injection guard: a cell starting with = + - @ tab or
+     * carriage return is executed as a formula by Excel/Sheets, and every
+     * exported field here is visitor-supplied. A leading single quote makes
+     * it plain text.
+     */
+    public static function neutraliseCsvCell(mixed $value): mixed
+    {
+        if (is_string($value) && $value !== '' && strpbrk($value[0], "=+-@\t\r") !== false) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 
     public function show(ContactSubmission $submission): View
