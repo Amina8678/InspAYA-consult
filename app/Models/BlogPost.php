@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PostStatus;
 use App\Models\Concerns\HasAuditTrail;
+use App\Models\Concerns\HasPendingRevisions;
 use Database\Factories\BlogPostFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 class BlogPost extends Model
 {
     /** @use HasFactory<BlogPostFactory> */
-    use HasAuditTrail, HasFactory;
+    use HasAuditTrail, HasFactory, HasPendingRevisions;
 
     /**
      * author_id is set explicitly from the authenticated user so a request

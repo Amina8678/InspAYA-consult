@@ -337,4 +337,58 @@ class ContentApprovalTest extends TestCase
         $this->assertSame('From B', PendingRevision::sole()->changes['title']);
         $this->assertSame($editorB->id, PendingRevision::sole()->submitted_by);
     }
+
+    // Deleted records: no orphaned revisions, no 500s ---------------------------
+
+    public function test_deleting_a_post_deletes_its_pending_revisions_and_the_queue_and_dashboard_stay_up(): void
+    {
+        $post = BlogPost::factory()->published()->create();
+        $other = BlogPost::factory()->published()->create();
+        $editor = $this->as('editor');
+        $this->put(route('admin.posts.update', $post), $this->postPayload(['title' => 'Edited']))->assertSessionHasNoErrors();
+        $this->put(route('admin.posts.update', $other), $this->postPayload(['title' => 'Other edit']))->assertSessionHasNoErrors();
+        $this->assertSame(2, PendingRevision::count());
+
+        $this->actingAs(User::factory()->withRole('administrator')->create());
+        $this->delete(route('admin.posts.destroy', $post), ['confirm' => '1'])->assertRedirect();
+
+        $this->assertSame(0, PendingRevision::where('revisable_id', $post->id)->count());
+        $this->assertSame(1, PendingRevision::count(), 'Another record\'s revision is untouched.');
+        $this->get(route('admin.content-approvals.index'))->assertOk();
+
+        $this->actingAs($editor);
+        $this->get(route('admin.dashboard'))->assertOk();
+    }
+
+    public function test_deleting_a_page_deletes_its_pending_revisions(): void
+    {
+        $page = Page::factory()->published()->create(['slug' => 'extra-page']);
+        $this->as('editor');
+        $this->put(route('admin.pages.update', $page), $this->pagePayload())->assertSessionHasNoErrors();
+        $this->assertSame(1, PendingRevision::count());
+
+        $this->actingAs(User::factory()->withRole('administrator')->create());
+        $this->delete(route('admin.pages.destroy', $page), ['confirm' => '1'])->assertRedirect();
+
+        $this->assertSame(0, PendingRevision::count());
+    }
+
+    public function test_an_orphan_that_already_exists_is_skipped_everywhere_instead_of_a_500(): void
+    {
+        $editor = User::factory()->withRole('editor')->create();
+        $orphan = PendingRevision::factory()->create([
+            'revisable_type' => (new BlogPost)->getMorphClass(), 'revisable_id' => 99999,
+            'submitted_by' => $editor->id,
+        ]);
+
+        $this->as('administrator');
+        $this->get(route('admin.content-approvals.index'))->assertOk()->assertSee('Nothing is waiting for approval.');
+        $this->get(route('admin.dashboard'))->assertOk()->assertDontSee('awaiting approval');
+        $this->get(route('admin.content-approvals.show', $orphan))->assertNotFound();
+        $this->post(route('admin.content-approvals.approve', $orphan))->assertNotFound();
+        $this->post(route('admin.content-approvals.reject', $orphan), ['reason' => 'No'])->assertNotFound();
+
+        $this->actingAs($editor);
+        $this->get(route('admin.dashboard'))->assertOk();
+    }
 }

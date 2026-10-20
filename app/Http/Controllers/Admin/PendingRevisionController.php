@@ -48,6 +48,7 @@ class PendingRevisionController extends Controller
 
         $revisions = PendingRevision::query()
             ->pending()
+            ->withLiveRecord()
             ->with(['revisable', 'submitter:id,name'])
             ->oldest('created_at')
             ->paginate(self::PER_PAGE);
@@ -61,6 +62,7 @@ class PendingRevisionController extends Controller
     public function show(PendingRevision $pendingRevision): View
     {
         $this->authorize('view', $pendingRevision);
+        $this->abortIfRecordDeleted($pendingRevision);
 
         return view('admin.content-approvals.show', [
             'revision' => $pendingRevision->load(['revisable', 'submitter:id,name']),
@@ -72,6 +74,7 @@ class PendingRevisionController extends Controller
     public function approve(PendingRevision $pendingRevision): RedirectResponse
     {
         $this->authorize('approve', $pendingRevision);
+        $this->abortIfRecordDeleted($pendingRevision);
 
         $title = $pendingRevision->load('revisable')->revisable->title;
         $this->approval->apply($pendingRevision, auth()->user());
@@ -81,10 +84,20 @@ class PendingRevisionController extends Controller
 
     public function reject(RejectRevisionRequest $request, PendingRevision $pendingRevision): RedirectResponse
     {
-        $title = $pendingRevision->load('revisable')->revisable->title;
+        $this->abortIfRecordDeleted($pendingRevision);
+        $title = $pendingRevision->revisable->title;
         $this->approval->reject($pendingRevision, $request->user(), $request->validated('reason'));
 
         return redirect()->route('admin.content-approvals.index')->with('status', 'Rejected the change to "'.$title.'".');
+    }
+
+    /**
+     * A revision whose record was deleted (an orphan from before deletes
+     * cleaned up their revisions) has nothing to review or apply.
+     */
+    private function abortIfRecordDeleted(PendingRevision $revision): void
+    {
+        abort_if($revision->revisable === null, 404, 'The page or post this change was for has been deleted.');
     }
 
     private function typeLabel(PendingRevision $revision): string

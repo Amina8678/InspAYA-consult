@@ -118,7 +118,7 @@ class DashboardController extends Controller
         }
 
         if ($user->can('content.publish')) {
-            $pending = PendingRevision::query()->pending()->count();
+            $pending = PendingRevision::query()->pending()->withLiveRecord()->count();
             if ($pending > 0) {
                 $alerts[] = [
                     'message' => "{$pending} content ".str('change')->plural($pending).' awaiting approval.',
@@ -134,6 +134,7 @@ class DashboardController extends Controller
                 ->with('revisable')
                 ->latest('id')
                 ->get()
+                ->filter(fn (PendingRevision $r) => $r->revisable !== null)
                 // Keep only the latest row per record: a rejection followed
                 // by a resubmission leaves the old rejected row in place as
                 // history, but it's superseded and shouldn't still alert.

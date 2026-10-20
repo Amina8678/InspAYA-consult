@@ -167,7 +167,7 @@ class BlogPostController extends Controller
         ]);
 
         $before = $post->only(self::AUDITED) + ['tags' => $this->tagsOf($post)];
-        $post->delete();
+        DB::transaction(fn () => $post->delete());
 
         $this->audit->record('deleted', $request->user(), $post, $before);
 

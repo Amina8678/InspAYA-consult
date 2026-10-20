@@ -12,7 +12,7 @@
     // content.publish, not a dedicated policy call: reviewing a pending
     // revision is gated exactly like publishing itself (stage 16).
     $canReviewContent = $user->can('content.publish');
-    $pendingRevisions = $canReviewContent ? App\Models\PendingRevision::query()->pending()->count() : 0;
+    $pendingRevisions = $canReviewContent ? App\Models\PendingRevision::query()->pending()->withLiveRecord()->count() : 0;
 
     $navItems = array_values(array_filter([
         ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'show' => true],

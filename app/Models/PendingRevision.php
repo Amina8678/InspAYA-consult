@@ -61,6 +61,17 @@ class PendingRevision extends Model
     }
 
     /**
+     * Pending revisions whose Page or BlogPost still exists. Orphans (from
+     * before deletes cleaned up after themselves) are left out.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeWithLiveRecord(Builder $query): void
+    {
+        $query->whereHasMorph('revisable', [Page::class, BlogPost::class]);
+    }
+
+    /**
      * @return MorphTo<Model, $this>
      */
     public function revisable(): MorphTo
