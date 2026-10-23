@@ -164,6 +164,7 @@ class AdminRoutesTest extends TestCase
             'content approval show' => ['GET', '/admin/content-approvals/:pendingRevision', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'content approval approve' => ['POST', '/admin/content-approvals/:pendingRevision/approve', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
             'content approval reject' => ['POST', '/admin/content-approvals/:pendingRevision/reject', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 302],
+            'health detail' => ['GET', '/admin/health', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'audit logs list' => ['GET', '/admin/audit-logs', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
             'audit log show' => ['GET', '/admin/audit-logs/:auditLog', ['super-admin', 'administrator'], ['editor', 'author', self::NONE], 200],
         ];

@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\Site\ConsultantController;
 use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Site\CoreValueController;
@@ -28,11 +29,21 @@ use App\Http\Controllers\Site\InsightController;
 use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\SeoController;
 use App\Http\Controllers\Site\ServiceController as SiteServiceController;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 // Slugs are lowercase words joined by single hyphens; anything else 404s
 // without touching the database. Must precede the routes it applies to.
 Route::pattern('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
+
+// Uptime probe: database check only, public, no session (see HealthController).
+Route::get('/up', [HealthController::class, 'up'])
+    ->withoutMiddleware([PreventRequestForgery::class, StartSession::class, ShareErrorsFromSession::class, EncryptCookies::class, AddQueuedCookiesToResponse::class])
+    ->name('health');
 
 // Technical SEO (NFR-SEO-03).
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
@@ -233,6 +244,9 @@ Route::middleware(['auth', 'auth.session', 'active'])->prefix('admin')->name('ad
     Route::get('/content-approvals/{pendingRevision}', [PendingRevisionController::class, 'show'])->middleware('permission:content.publish')->name('content-approvals.show');
     Route::post('/content-approvals/{pendingRevision}/approve', [PendingRevisionController::class, 'approve'])->middleware('permission:content.publish')->name('content-approvals.approve');
     Route::post('/content-approvals/{pendingRevision}/reject', [PendingRevisionController::class, 'reject'])->middleware('permission:content.publish')->name('content-approvals.reject');
+
+    // Operational health detail (queue, failed jobs, scheduler); JSON.
+    Route::get('/health', [HealthController::class, 'details'])->middleware('permission:settings.manage')->name('health');
 
     // Audit log (NFR-SEC-07, plan §6 row 32). Read-only: no create, edit or
     // delete route, matching AuditLog's model-level immutability (D9).
