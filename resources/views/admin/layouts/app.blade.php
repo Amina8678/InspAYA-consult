@@ -40,7 +40,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title') | {{ config('app.name') }} CMS</title>
-    <link rel="stylesheet" href="{{ asset('admin-assets/admin.css') }}">
+    <link rel="stylesheet" href="{{ \App\Support\Assets::url('admin-assets/admin.css') }}">
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to main content</a>
@@ -90,6 +90,6 @@
         </main>
     </div>
 
-    <script src="{{ asset('admin-assets/admin.js') }}" defer></script>
+    <script src="{{ \App\Support\Assets::url('admin-assets/admin.js') }}" defer></script>
 </body>
 </html>

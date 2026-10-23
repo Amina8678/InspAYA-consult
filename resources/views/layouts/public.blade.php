@@ -48,8 +48,8 @@
     @endif
     <meta name="twitter:card" content="{{ $seo['og_image'] ? 'summary_large_image' : 'summary' }}">
 
-    <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/site.css') }}">
+    <link rel="stylesheet" href="{{ \App\Support\Assets::url('css/theme.css') }}">
+    <link rel="stylesheet" href="{{ \App\Support\Assets::url('css/site.css') }}">
 
     {{-- Structured data (NFR-SEO-04). @json escapes <, >, & and quotes. --}}
     @php
@@ -77,6 +77,6 @@
 
     @include('public.partials.footer')
 
-    <script src="{{ asset('js/site.js') }}" defer></script>
+    <script src="{{ \App\Support\Assets::url('js/site.js') }}" defer></script>
 </body>
 </html>
