@@ -30,15 +30,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // TrustProxies is already in Laravel's default global middleware
         // stack; by default it trusts nothing, so $request->secure() reflects
         // the raw connection instead of an X-Forwarded-Proto header from a
-        // reverse proxy/load balancer. Left unset, that's the safe default
-        // (see ForceHttps). A production deployment that terminates TLS at a
-        // proxy must set TRUSTED_PROXIES (see docs/admin-auth.md) — this
-        // never trusts "*" (any proxy) unless that env var is explicitly set
-        // to "*", which is a deliberate, documented deployment choice, not a
-        // default.
-        $middleware->trustProxies(
-            at: blank($trustedProxies = env('TRUSTED_PROXIES')) ? null : $trustedProxies,
-        );
+        // reverse proxy/load balancer (see ForceHttps). It reads
+        // config/trustedproxy.php, i.e. TRUSTED_PROXIES from .env, at request
+        // time. Do not call env() here: this file runs before .env is loaded.
+        // A production deployment that terminates TLS at a proxy must set
+        // TRUSTED_PROXIES (see docs/admin-auth.md); "*" is never the default.
 
         // NFR-SEC-09: on every response, public and admin alike — including a
         // 404 for a URL that matches no route at all, which never enters the

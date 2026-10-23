@@ -238,6 +238,15 @@ value is server-specific and must come from whoever configures that proxy:
   `$request->secure()` reflects the raw connection — correct only when the
   app itself terminates TLS with no proxy in front of it.
 
+`TRUSTED_PROXIES` is read through `config/trustedproxy.php`, so a value in
+`.env` works, including after `php artisan config:cache`. (An earlier version
+read `env()` in `bootstrap/app.php`, which runs before `.env` is loaded, so a
+value set only in `.env` was silently ignored and the redirect loop above
+happened anyway. `TrustedProxiesEnvFileTest` boots a fresh app with the value
+in a `.env` file only, cached and uncached, to keep that from coming back.)
+After changing it on a server that caches config, run `php artisan config:cache`
+again.
+
 This is deliberately not guessed or defaulted to "trust everything": an
 unconfigured trust setting is a redirect loop (visible immediately), not a
 silent security hole, and the correct value can only come from whoever
