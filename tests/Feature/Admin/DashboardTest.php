@@ -8,6 +8,9 @@ use App\Models\ContactSubmission;
 use App\Models\Page;
 use App\Models\Service;
 use App\Models\User;
+use App\Notifications\AdminResetPassword;
+use App\Notifications\EnquiryAcknowledgement;
+use App\Notifications\EnquiryReceived;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -107,6 +110,77 @@ class DashboardTest extends TestCase
 
         $this->as('author');
         $this->get(route('admin.dashboard'))->assertViewHas('alerts', []);
+    }
+
+    private function failedJob(string $notification, string $uuid): void
+    {
+        DB::table('failed_jobs')->insert([
+            'uuid' => $uuid, 'connection' => 'database', 'queue' => 'default',
+            'payload' => json_encode(['displayName' => $notification]),
+            'exception' => 'TransportException', 'failed_at' => now(),
+        ]);
+    }
+
+    public function test_failed_company_notification_emails_are_named_and_link_to_the_inbox(): void
+    {
+        $this->as('administrator');
+        $this->failedJob(EnquiryReceived::class, '00000000-0000-0000-0000-000000000001');
+        $this->failedJob(EnquiryReceived::class, '00000000-0000-0000-0000-000000000002');
+
+        $response = $this->get(route('admin.dashboard'))->assertOk();
+
+        $response->assertSee('2 contact-form notifications to the company could not be emailed');
+        $response->assertSee('The enquiries are saved');
+        $response->assertSee('href="'.route('admin.enquiries.index').'"', false);
+    }
+
+    public function test_other_failed_jobs_get_the_retry_instructions_and_visitor_emails_are_named(): void
+    {
+        $this->as('super-admin');
+        $this->failedJob(EnquiryAcknowledgement::class, '00000000-0000-0000-0000-000000000001');
+        $this->failedJob(AdminResetPassword::class, '00000000-0000-0000-0000-000000000002');
+
+        $this->get(route('admin.dashboard'))
+            ->assertSee('2 background jobs failed')
+            ->assertSee('including 1 confirmation email to visitors')
+            ->assertSee('php artisan queue:retry all');
+    }
+
+    public function test_a_company_notification_failure_is_not_double_counted_as_a_generic_failed_job(): void
+    {
+        $this->as('super-admin');
+        $this->failedJob(EnquiryReceived::class, '00000000-0000-0000-0000-000000000001');
+
+        $this->get(route('admin.dashboard'))
+            ->assertSee('1 contact-form notification to the company')
+            ->assertDontSee('background job failed')
+            ->assertDontSee('background jobs failed');
+    }
+
+    public function test_a_job_waiting_too_long_says_the_worker_may_not_be_running(): void
+    {
+        $this->as('administrator');
+        DB::table('jobs')->insert(['queue' => 'default', 'payload' => '{}', 'attempts' => 0, 'available_at' => now()->subHour()->timestamp, 'created_at' => now()->subHour()->timestamp]);
+        DB::table('jobs')->insert(['queue' => 'default', 'payload' => '{}', 'attempts' => 0, 'available_at' => now()->timestamp, 'created_at' => now()->timestamp]);
+
+        $this->get(route('admin.dashboard'))->assertSee('Queued jobs (such as emails) have been waiting over 15 minutes (1 so far)')
+            ->assertSee('queue worker may not be running');
+    }
+
+    public function test_a_recent_queue_backlog_is_not_an_alert(): void
+    {
+        $this->as('administrator');
+        DB::table('jobs')->insert(['queue' => 'default', 'payload' => '{}', 'attempts' => 0, 'available_at' => now()->timestamp, 'created_at' => now()->timestamp]);
+
+        $this->get(route('admin.dashboard'))->assertDontSee('waiting over');
+    }
+
+    public function test_queue_alerts_are_not_shown_to_people_who_cannot_fix_them(): void
+    {
+        $this->as('editor');
+        $this->failedJob(AdminResetPassword::class, '00000000-0000-0000-0000-000000000001');
+
+        $this->get(route('admin.dashboard'))->assertDontSee('background job');
     }
 
     public function test_user_supplied_text_is_escaped(): void

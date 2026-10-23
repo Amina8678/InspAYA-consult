@@ -48,6 +48,26 @@ class ContactFormTest extends SiteTestCase
             ->post(route('contact.store'), $data);
     }
 
+    public function test_both_emails_retry_with_a_backoff_before_failing(): void
+    {
+        Queue::fake();
+
+        $this->submit($this->valid())->assertSessionHas('status', ContactController::SUCCESS_MESSAGE);
+
+        $jobs = Queue::pushed(SendQueuedNotifications::class);
+        $this->assertCount(2, $jobs);
+        $jobs->each(function (SendQueuedNotifications $job) {
+            $this->assertSame(5, $job->tries);
+            $this->assertSame([60, 300, 900, 3600], $job->backoff());
+        });
+    }
+
+    public function test_the_success_message_does_not_promise_an_email(): void
+    {
+        $this->assertStringNotContainsStringIgnoringCase('email', ContactController::SUCCESS_MESSAGE);
+        $this->assertStringNotContainsStringIgnoringCase('confirmation', ContactController::SUCCESS_MESSAGE);
+    }
+
     public function test_valid_submission_is_stored_and_both_emails_are_queued(): void
     {
         Notification::fake();

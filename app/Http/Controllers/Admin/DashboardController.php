@@ -14,6 +14,8 @@ use App\Models\Page;
 use App\Models\PendingRevision;
 use App\Models\Service;
 use App\Models\User;
+use App\Notifications\EnquiryAcknowledgement;
+use App\Notifications\EnquiryReceived;
 use App\Support\SiteSettings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,6 +30,9 @@ use Illuminate\Support\Facades\DB;
 class DashboardController extends Controller
 {
     private const RECENT = 5;
+
+    /** A queued job older than this means the worker is probably not running. */
+    private const STUCK_JOB_MINUTES = 15;
 
     private const ACTIVITY = 10;
 
@@ -115,6 +120,17 @@ class DashboardController extends Controller
                     'url' => route('admin.enquiries.index', ['status' => 'new']),
                 ];
             }
+
+            // The enquiry is saved before any email is queued, so a failed
+            // notification means staff were never told, not that it was lost.
+            $unsent = DB::table('failed_jobs')->where('payload', 'like', '%'.class_basename(EnquiryReceived::class).'%')->count();
+            if ($unsent > 0) {
+                $alerts[] = [
+                    'message' => "{$unsent} contact-form ".str('notification')->plural($unsent).' to the company could not be emailed after several attempts. '
+                        .'The enquiries are saved: check the inbox for any you have not seen.',
+                    'url' => route('admin.enquiries.index'),
+                ];
+            }
         }
 
         if ($user->can('content.publish')) {
@@ -162,10 +178,36 @@ class DashboardController extends Controller
                 $alerts[] = 'No enquiry notification address is set, so enquiry emails go to the default sender address.';
             }
 
-            $failed = DB::table('failed_jobs')->count();
-            if ($failed > 0) {
-                $alerts[] = "{$failed} background ".str('job')->plural($failed).' (such as emails) failed. Check the queue worker logs.';
-            }
+            $alerts = [...$alerts, ...$this->queueAlerts()];
+        }
+
+        return $alerts;
+    }
+
+    /**
+     * Background-queue problems, for people who can fix the server side.
+     *
+     * @return list<string>
+     */
+    private function queueAlerts(): array
+    {
+        $alerts = [];
+
+        $failed = DB::table('failed_jobs')->count();
+        $enquiryEmails = DB::table('failed_jobs')->where('payload', 'like', '%'.class_basename(EnquiryReceived::class).'%')->count();
+        $visitorEmails = DB::table('failed_jobs')->where('payload', 'like', '%'.class_basename(EnquiryAcknowledgement::class).'%')->count();
+        $other = $failed - $enquiryEmails;
+
+        if ($other > 0) {
+            $alerts[] = "{$other} background ".str('job')->plural($other).' failed'
+                .($visitorEmails > 0 ? " (including {$visitorEmails} confirmation ".str('email')->plural($visitorEmails).' to visitors)' : '')
+                .'. Run "php artisan queue:failed" on the server, fix the cause (usually mail settings), then "php artisan queue:retry all".';
+        }
+
+        // A worker that is not running leaves jobs sitting here unsent.
+        $stuck = DB::table('jobs')->where('created_at', '<', now()->subMinutes(self::STUCK_JOB_MINUTES)->timestamp)->count();
+        if ($stuck > 0) {
+            $alerts[] = 'Queued jobs (such as emails) have been waiting over '.self::STUCK_JOB_MINUTES." minutes ({$stuck} so far). The queue worker may not be running.";
         }
 
         return $alerts;

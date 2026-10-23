@@ -17,6 +17,9 @@ class EnquiryReceived extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    /** Five attempts, then the job lands in failed_jobs (the dashboard says so). */
+    public int $tries = 5;
+
     public function __construct(public ContactSubmission $submission) {}
 
     /**
@@ -25,6 +28,17 @@ class EnquiryReceived extends Notification implements ShouldQueue
     public function via(object $notifiable): array
     {
         return ['mail'];
+    }
+
+    /**
+     * Seconds to wait before each retry: a mail server that is briefly down
+     * gets about 80 minutes to recover before the job is given up on.
+     *
+     * @return list<int>
+     */
+    public function backoff(): array
+    {
+        return [60, 300, 900, 3600];
     }
 
     public function toMail(object $notifiable): MailMessage
