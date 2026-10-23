@@ -10,6 +10,11 @@ use Illuminate\Database\Seeder;
  * Setting keys from schema plan §3.17 with placeholder values only: no real
  * contact details. The client supplies the real values (SRS Appendix B).
  *
+ * In production the placeholder values are not seeded at all: those keys are
+ * created blank, so the public site omits them (rather than showing
+ * "[PLACEHOLDER]" or an example.com address) until real values are entered.
+ * `php artisan launch:check` fails while any of them is still blank.
+ *
  * Idempotent and non-destructive: existing keys are never overwritten, so
  * values edited in the CMS survive a reseed.
  */
@@ -46,12 +51,28 @@ class SiteSettingsSeeder extends Seeder
         ['key' => 'email.enquiry_recipient', 'group' => 'email', 'type' => SettingType::String, 'value' => 'enquiries@example.com'],
     ];
 
+    /**
+     * Keys whose seeded value is a placeholder and so is left blank in production.
+     *
+     * @var list<string>
+     */
+    public const BLANK_IN_PRODUCTION = [
+        'contact.email',
+        'contact.phone',
+        'contact.address',
+        'seo.default_description',
+        'email.from_address',
+        'email.enquiry_recipient',
+    ];
+
     public function run(): void
     {
         foreach (self::SETTINGS as $setting) {
+            $blank = app()->isProduction() && in_array($setting['key'], self::BLANK_IN_PRODUCTION, true);
+
             SiteSetting::firstOrCreate(
                 ['key' => $setting['key']],
-                ['group' => $setting['group'], 'type' => $setting['type'], 'value' => $setting['value']],
+                ['group' => $setting['group'], 'type' => $setting['type'], 'value' => $blank ? null : $setting['value']],
             );
         }
     }

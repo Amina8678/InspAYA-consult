@@ -262,6 +262,55 @@ class SeederTest extends TestCase
         }
     }
 
+    public function test_production_seeds_services_and_core_values_inactive(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $this->seedAsDeploy();
+
+        $this->assertSame(0, Service::where('is_active', true)->count());
+        $this->assertSame(0, CoreValue::where('is_active', true)->count());
+    }
+
+    public function test_non_production_still_seeds_services_and_core_values_active(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertSame(0, Service::where('is_active', false)->count());
+        $this->assertSame(0, CoreValue::where('is_active', false)->count());
+    }
+
+    public function test_production_leaves_placeholder_settings_blank_and_keeps_the_rest(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $this->seedAsDeploy();
+
+        foreach (SiteSettingsSeeder::BLANK_IN_PRODUCTION as $key) {
+            $this->assertNull(SiteSetting::where('key', $key)->sole()->value, $key);
+        }
+        $this->assertSame(count(SiteSettingsSeeder::SETTINGS), SiteSetting::count(), 'The keys still exist, so the CMS settings screen shows them.');
+        $this->assertSame('InspAya Consult', SiteSetting::where('key', 'branding.site_name')->value('value'));
+        SiteSetting::pluck('value')->filter()->each(function (string $value) {
+            $this->assertStringNotContainsString('example.com', $value);
+            $this->assertStringNotContainsString('PLACEHOLDER', $value);
+        });
+    }
+
+    public function test_production_reseed_does_not_overwrite_values_entered_in_the_cms(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+        $this->seedAsDeploy();
+
+        SiteSetting::where('key', 'contact.email')->update(['value' => 'real@client.test']);
+        Service::query()->update(['is_active' => true]);
+
+        $this->seedAsDeploy();
+
+        $this->assertSame('real@client.test', SiteSetting::where('key', 'contact.email')->value('value'));
+        $this->assertSame(7, Service::where('is_active', true)->count());
+    }
+
     public function test_production_pages_are_empty_draft_shells(): void
     {
         $this->app->detectEnvironment(fn () => 'production');

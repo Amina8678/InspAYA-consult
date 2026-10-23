@@ -11,6 +11,9 @@ use Illuminate\Support\Str;
  * Appendix B). Descriptions are placeholders: Appendix B lists the approved
  * copy as still outstanding from the client.
  *
+ * In production they are seeded inactive, so no placeholder text is public;
+ * an admin activates each one after replacing its copy.
+ *
  * Idempotent and non-destructive: matched by slug, never overwritten.
  */
 class ServiceSeeder extends Seeder
@@ -41,7 +44,7 @@ class ServiceSeeder extends Seeder
                     'description' => self::PLACEHOLDER.' Full description of '.$title.'.',
                     'capabilities' => [self::PLACEHOLDER.' Capability 1', self::PLACEHOLDER.' Capability 2'],
                     'outcomes' => [self::PLACEHOLDER.' Outcome 1', self::PLACEHOLDER.' Outcome 2'],
-                    'is_active' => true,
+                    'is_active' => ! app()->isProduction(),
                     'sort_order' => $index + 1,
                     'meta_title' => $title.' | InspAya Consult',
                     'meta_description' => self::PLACEHOLDER,
