@@ -22,6 +22,9 @@ use Illuminate\Validation\ValidationException;
  *
  * - Throttled per email + IP: after MAX_ATTEMPTS failures, 429 with
  *   Retry-After until DECAY_SECONDS pass.
+ * - Also throttled per IP across all emails: after IP_MAX_ATTEMPTS failures
+ *   in IP_DECAY_SECONDS, every sign-in from that IP gets a 429, so cycling
+ *   through emails (password spraying) cannot dodge the per-email limit.
  * - One generic error for unknown email, wrong password and inactive
  *   account, so the response never reveals whether an email exists.
  * - Every attempt is written to the audit log.
@@ -31,6 +34,11 @@ class AdminLoginController extends Controller
     public const MAX_ATTEMPTS = 5;
 
     public const DECAY_SECONDS = 60;
+
+    /** Failed attempts from one IP, whatever the email, before it is blocked (an office behind one NAT fits). */
+    public const IP_MAX_ATTEMPTS = 20;
+
+    public const IP_DECAY_SECONDS = 600;
 
     public const AUDIT_FAILED_WINDOW_SECONDS = 60;
 
@@ -52,16 +60,21 @@ class AdminLoginController extends Controller
 
         $email = Str::lower($credentials['email']);
         $key = $this->throttleKey($email, $request);
+        $ipKey = $this->ipThrottleKey($request);
 
-        if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
-            // One row per throttle window, however many requests arrive in it.
-            $this->recordOnce('throttled|'.$key, max(1, RateLimiter::availableIn($key)),
-                fn () => $this->audit->record(AuditLogger::LOGIN_THROTTLED, new: ['email' => $email]));
+        // Checked first and before any user lookup or password hashing, so a
+        // blocked IP costs no database or CPU work and writes one audit row
+        // per window, not one per request.
+        foreach ([[$ipKey, self::IP_MAX_ATTEMPTS], [$key, self::MAX_ATTEMPTS]] as [$limitKey, $max]) {
+            if (RateLimiter::tooManyAttempts($limitKey, $max)) {
+                $this->recordOnce('throttled|'.$limitKey, max(1, RateLimiter::availableIn($limitKey)),
+                    fn () => $this->audit->record(AuditLogger::LOGIN_THROTTLED, new: ['email' => $email]));
 
-            throw new ThrottleRequestsException(
-                'Too many login attempts. Please try again later.',
-                headers: ['Retry-After' => RateLimiter::availableIn($key)],
-            );
+                throw new ThrottleRequestsException(
+                    'Too many login attempts. Please try again later.',
+                    headers: ['Retry-After' => RateLimiter::availableIn($limitKey)],
+                );
+            }
         }
 
         $user = User::firstWhere('email', $email);
@@ -69,6 +82,7 @@ class AdminLoginController extends Controller
 
         if ($reason !== null) {
             RateLimiter::hit($key, self::DECAY_SECONDS);
+            RateLimiter::hit($ipKey, self::IP_DECAY_SECONDS);
             // At most one row per email + IP per minute (the throttle itself
             // still counts every attempt).
             $this->recordOnce('failed|'.$key, self::AUDIT_FAILED_WINDOW_SECONDS,
@@ -138,6 +152,11 @@ class AdminLoginController extends Controller
         if (Cache::add('audit-once|'.hash('sha256', $key), true, $seconds)) {
             $record();
         }
+    }
+
+    private function ipThrottleKey(Request $request): string
+    {
+        return 'admin-login-ip|'.$request->ip();
     }
 
     private function throttleKey(string $email, Request $request): string

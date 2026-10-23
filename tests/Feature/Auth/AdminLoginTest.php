@@ -123,6 +123,66 @@ class AdminLoginTest extends TestCase
         $this->attempt(ip: '192.0.2.99')->assertRedirect(route('admin.dashboard'));
     }
 
+    public function test_one_ip_cycling_through_emails_is_throttled_with_bounded_audit_rows(): void
+    {
+        $statuses = [];
+        for ($i = 1; $i <= 30; $i++) {
+            $statuses[] = $this->attempt("spray{$i}@example.com", 'wrong-password', '192.0.2.50')->getStatusCode();
+        }
+
+        $this->assertSame(
+            array_merge(array_fill(0, AdminLoginController::IP_MAX_ATTEMPTS, 302), array_fill(0, 30 - AdminLoginController::IP_MAX_ATTEMPTS, 429)),
+            $statuses,
+        );
+        $this->assertSame(AdminLoginController::IP_MAX_ATTEMPTS, AuditLog::where('action', 'login_failed')->count());
+        $this->assertSame(1, AuditLog::where('action', 'login_throttled')->count());
+    }
+
+    public function test_requests_past_the_ip_limit_write_no_more_rows_however_many_arrive(): void
+    {
+        for ($i = 1; $i <= AdminLoginController::IP_MAX_ATTEMPTS; $i++) {
+            $this->attempt("spray{$i}@example.com", 'wrong-password', '192.0.2.51');
+        }
+        $rows = AuditLog::count();
+
+        for ($i = 1; $i <= 50; $i++) {
+            $this->attempt("more{$i}@example.com", 'wrong-password', '192.0.2.51')->assertStatus(429)->assertHeader('Retry-After');
+        }
+
+        $this->assertSame($rows + 1, AuditLog::count(), 'One login_throttled row for the whole window.');
+    }
+
+    public function test_the_ip_limit_blocks_only_that_ip_and_expires(): void
+    {
+        $this->user();
+        for ($i = 1; $i <= AdminLoginController::IP_MAX_ATTEMPTS; $i++) {
+            $this->attempt("spray{$i}@example.com", 'wrong-password', '192.0.2.52');
+        }
+
+        // Even the right password is refused from the blocked IP; another IP is unaffected.
+        $this->attempt(ip: '192.0.2.52')->assertStatus(429);
+        $this->attempt(ip: '192.0.2.53')->assertRedirect(route('admin.dashboard'));
+        $this->post(route('admin.logout'));
+
+        $this->travel(AdminLoginController::IP_DECAY_SECONDS + 1)->seconds();
+
+        $this->attempt(ip: '192.0.2.52')->assertRedirect(route('admin.dashboard'));
+    }
+
+    public function test_a_normal_office_stays_under_the_ip_limit(): void
+    {
+        $this->user();
+
+        // Five staff behind one NAT each mistype a password twice, then get in.
+        for ($i = 1; $i <= 5; $i++) {
+            User::factory()->create(['email' => "staff{$i}@example.com", 'password' => self::PASSWORD]);
+            $this->attempt("staff{$i}@example.com", 'wrong-password', '192.0.2.54');
+            $this->attempt("staff{$i}@example.com", 'wrong-password', '192.0.2.54');
+            $this->attempt("staff{$i}@example.com", self::PASSWORD, '192.0.2.54')->assertRedirect(route('admin.dashboard'));
+            $this->post(route('admin.logout'));
+        }
+    }
+
     public function test_successful_login_resets_the_failure_count(): void
     {
         $this->user();
