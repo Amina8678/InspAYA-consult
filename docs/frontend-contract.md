@@ -74,14 +74,15 @@ Any other shape (capitals, underscores) is a 404.
   *support* categories and tags (each article shows them), but the SRS does not
   require filtering or search pages. Categories and tags are therefore plain
   labels for now, not links.
-- Testimonials, FAQs and client logos (not yet confirmed by the client).
+- Client logos (not yet confirmed by the client). Testimonials and FAQs *are* built (stage 17): testimonials on the home page, FAQs on the contact page; both hide when empty and are demo-seeded outside production only.
 
 ### What a 404 means
 
 A 404 is the backend deliberately saying "this page is not public", not an
 error: the content is unpublished, inactive, scheduled for later, or does not
 exist. Laravel renders `resources/views/errors/404.blade.php` (and `429` for
-rate limits). The error view itself receives **none** of the page variables;
+rate limits, `419` for an expired page, and `503` for maintenance mode; the
+503 view is standalone and runs no queries, so it works with the database down). The error view itself receives **none** of the page variables;
 it gets the site header and footer through the layout's partials (rule 2) and
 is marked `noindex`.
 Anything else going wrong is a 500, which is always a backend bug to report.
@@ -407,6 +408,11 @@ Outcomes:
   (`old('name')` etc.).
 - **Rate limited** (3 per minute or 10 per hour per IP): **429** page
   (`errors/429`).
+- **Page expired** (session or CSRF token timed out while the form was open):
+  the visitor is redirected back to the form with their text kept and
+  `$errors->first('session')` set. Consent and the honeypot are not carried
+  over, so the visitor must tick consent again. Show `session` first in the
+  error summary (the contact view already does).
 
 The backend queues two emails: a notification to the enquiry address from
 settings, and an acknowledgement to the visitor.

@@ -477,7 +477,7 @@ Super Admin is seeded with **all** permissions explicitly.
 |---|---|---|
 | ~~Testimonials / FAQs~~ **Built, stage 17** | In §1.4 scope, no §4 entity, unconfirmed in App. B | Built exactly as sketched: `testimonials` (quote, author_name, author_title, organization, photo_id → media SET NULL, is_active, sort_order) and `faqs` (question, answer, is_active, sort_order), additive migrations, `values.edit`-style permissions (`testimonials.edit`/`.manage`, `faqs.edit`/`.manage`). Client hadn't supplied real content by stage 17 either, so both are demo-seeded only (non-production), same as consultants/blog posts. |
 | ~~Scheduled publishing~~ **Built, stage 17** | FR-BLOG-02 mentions it but never defines it | Confirmed no schema change was needed — the existing `(status, published_at)` index and query filter already made this work. What stage 17 actually added: `AnnounceScheduledPosts` (`posts:announce-scheduled`, Laravel's scheduler, `routes/console.php`) for an audit-trail entry at the actual go-live moment and a tighter sitemap-freshness bound; see docs/admin-auth.md "Scheduled publishing". No `scheduled` PostStatus was added — "scheduled" is still a derived display state (`BlogPost::isScheduled()`), not a stored one. |
-| Editor "Approved items only" | §7 doesn't define approval | Additive `approved_by` (FK users SET NULL) + `approved_at` on `blog_posts`/`pages`, and an Editor check in the post policy, then grant `content.publish` to Editor. Until then Editors cannot publish (row 22 in §6). |
+| ~~Editor "Approved items only"~~ **Built, stage 16** | §7 doesn't define approval | Built differently from the sketch: no `approved_by`/`approved_at` columns. An additive polymorphic `pending_revisions` table (revisable_type/id, submitted_by, `changes` JSON, status, reviewed_by, reviewed_at, rejection_reason) holds an Editor's edit to an already-published page or post; Administrators and Super Admins (who keep `content.publish`) approve or reject it. Editors still do not get `content.publish` (D12). See docs/content-approval.md; the hardening listed there as stage 16b is not built. |
 | Redirect management (NFR-SEO-05) | Not in §4 | `redirects` (from_path unique, to_path, status_code, hits). |
 | Backup status (FR-ADM-14) | Not in §4 | Read from backup tooling, or `site_settings` key `system.last_backup_at`. |
 
@@ -535,7 +535,7 @@ scheduling and Editor approval deferred.
 - **D7.** Enquiry `ip_address` is stored. A retention/purge policy (NFR-PRIV-01) is a later task.
 - **D8.** SMTP secrets stay in `.env`, never in `site_settings`.
 - **D9.** Audit-log immutability is app-level only (model guard); DB triggers / a restricted DB user are an ops decision.
-- **D10.** Demo content (placeholder pages, consultants, categories, tags, posts) is seeded only when `APP_ENV` ≠ `production`. Roles, Super Admin, settings, the seven services and the six core values are seeded everywhere. Production additionally gets empty draft page shells (§5).
+- **D10.** Demo content (placeholder pages, consultants, categories, tags, posts) is seeded only when `APP_ENV` ≠ `production`. Roles, Super Admin, settings, the seven services and the six core values are seeded everywhere (in production the services and values are inactive and the placeholder settings blank, so nothing placeholder is public; see §12). Production additionally gets empty draft page shells (§5).
 - **D11.** Admin-panel permission gaps (pages, taxonomy, post deletion) are mapped as in §6 rows 15, 16, 20, 21.
 - **D12.** Editors do **not** get `content.publish` until the "approved items only" rule is defined (§7). SA and Admin publish.
 
@@ -586,4 +586,10 @@ rewrite must address them:
   also written to `bootstrap/cache/config.php`, so re-cache after removing it.
 - Production requires `php artisan db:seed --force`. In production it seeds
   roles, the Super Admin, settings, the seven services, the six core values and
-  empty draft page shells. No demo content.
+  empty draft page shells. No demo content. Nothing placeholder is public: the
+  services and core values are created **inactive** (they keep placeholder
+  text until an admin replaces it and activates them), and the placeholder
+  settings (`contact.email`, `contact.phone`, `contact.address`,
+  `seo.default_description`, `email.from_address`, `email.enquiry_recipient`)
+  are created **blank**. Run `php artisan launch:check` as the last step before
+  launch (docs/launch.md); the whole procedure is in docs/deployment.md.

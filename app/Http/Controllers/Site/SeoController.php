@@ -21,10 +21,13 @@ class SeoController extends Controller
      * How long a generated sitemap is served from cache before the URL list
      * is rebuilt. Chosen over per-request generation because sitemaps are
      * fetched repeatedly by crawlers in bursts; chosen over a long TTL so a
-     * newly published page is discoverable again within minutes. There is no
-     * proactive cache-busting on publish/unpublish — this TTL is the only
-     * bound on staleness, which keeps this endpoint decoupled from every
-     * content controller.
+     * newly published page is discoverable again within minutes. Publishing
+     * or unpublishing in the CMS does not clear the cache, so this TTL is the
+     * bound on staleness for those changes, which keeps this endpoint
+     * decoupled from every content controller. The one exception is a
+     * scheduled post going live: the `posts:announce-scheduled` command
+     * (run every minute by the scheduler) forgets the cached sitemap so that
+     * post appears without waiting out the TTL.
      */
     public const CACHE_SECONDS = 300;
 
