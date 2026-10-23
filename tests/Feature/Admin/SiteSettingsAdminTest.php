@@ -166,6 +166,31 @@ class SiteSettingsAdminTest extends TestCase
         $this->assertDatabaseMissing('site_settings', ['key' => 'analytics.tracking_id']);
     }
 
+    public function test_the_unused_sender_setting_is_no_longer_seeded_or_shown(): void
+    {
+        $this->assertSame(0, SiteSetting::where('key', 'email.from_address')->count());
+
+        $this->asAdmin();
+        $this->get(route('admin.settings.edit'))->assertOk()->assertDontSee('Send emails from')->assertDontSee('email__from_address', false);
+    }
+
+    public function test_a_database_that_still_has_the_old_row_keeps_working_and_the_migration_removes_it(): void
+    {
+        SiteSetting::create(['key' => 'email.from_address', 'group' => 'email', 'type' => 'string', 'value' => 'no-reply@example.com']);
+        $this->asAdmin();
+
+        // The screen ignores the leftover row, and saving still works.
+        $this->get(route('admin.settings.edit'))->assertOk()->assertDontSee('no-reply@example.com');
+        $this->put(route('admin.settings.update'), ['contact__phone' => '+1 555 0142'])->assertSessionHasNoErrors();
+        $this->assertSame('+1 555 0142', $this->value('contact.phone'));
+        $this->assertSame('no-reply@example.com', $this->value('email.from_address'), 'Untouched by a settings save.');
+
+        (require database_path('migrations/2026_10_01_000001_remove_unused_email_from_address_setting.php'))->up();
+
+        $this->assertSame(0, SiteSetting::where('key', 'email.from_address')->count());
+        $this->assertSame('+1 555 0142', $this->value('contact.phone'), 'Other settings are untouched.');
+    }
+
     public function test_setting_a_tracking_id_is_refused_until_cookie_consent_exists(): void
     {
         $this->asAdmin();

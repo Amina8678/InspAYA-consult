@@ -55,8 +55,7 @@ class SiteSettingsRequest extends FormRequest
             'analytics.tracking_id' => ['label' => 'Analytics tracking ID', 'type' => 'tracking', 'hint' => 'Locked to empty for now: FR-LEGAL-02 requires a cookie-consent mechanism before any analytics can run, and that hasn\'t been built yet. Setting this would put the site out of compliance the moment it took effect, so saving a value here is refused until the consent banner ships.'],
         ]],
         'email' => ['label' => 'Email', 'fields' => [
-            'email.from_address' => ['label' => 'Send emails from', 'type' => 'email', 'hint' => 'Mail server credentials stay in the server configuration, not here.'],
-            'email.enquiry_recipient' => ['label' => 'Send new enquiries to', 'type' => 'email'],
+            'email.enquiry_recipient' => ['label' => 'Send new enquiries to', 'type' => 'email', 'hint' => 'Where enquiry notifications go. The sender address and mail server are set in the server configuration, not here.'],
         ]],
     ];
 

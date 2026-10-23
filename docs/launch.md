@@ -35,7 +35,7 @@ placeholder text:
 - the 7 services and 6 core values are created **inactive**, with placeholder
   copy. Edit each in the admin, then tick Active.
 - `contact.email`, `contact.phone`, `contact.address`,
-  `seo.default_description`, `email.from_address` and `email.enquiry_recipient`
+  `seo.default_description` and `email.enquiry_recipient`
   are created **blank**. The public site leaves out blank fields (footer,
   contact page, structured data).
 - Home, About, Privacy Policy and Terms of Service are empty drafts. About and

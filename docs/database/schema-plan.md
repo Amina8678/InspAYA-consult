@@ -590,6 +590,6 @@ rewrite must address them:
   services and core values are created **inactive** (they keep placeholder
   text until an admin replaces it and activates them), and the placeholder
   settings (`contact.email`, `contact.phone`, `contact.address`,
-  `seo.default_description`, `email.from_address`, `email.enquiry_recipient`)
+  `seo.default_description`, `email.enquiry_recipient`)
   are created **blank**. Run `php artisan launch:check` as the last step before
   launch (docs/launch.md); the whole procedure is in docs/deployment.md.

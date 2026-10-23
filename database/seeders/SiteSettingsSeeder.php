@@ -46,8 +46,8 @@ class SiteSettingsSeeder extends Seeder
 
         ['key' => 'analytics.tracking_id', 'group' => 'analytics', 'type' => SettingType::String, 'value' => null],
 
-        // Non-secret email config only; SMTP credentials stay in .env (D8).
-        ['key' => 'email.from_address', 'group' => 'email', 'type' => SettingType::String, 'value' => 'no-reply@example.com'],
+        // Who receives enquiry notifications. The sender address and SMTP
+        // credentials stay in .env (D8): mail is sent from MAIL_FROM_ADDRESS.
         ['key' => 'email.enquiry_recipient', 'group' => 'email', 'type' => SettingType::String, 'value' => 'enquiries@example.com'],
     ];
 
@@ -61,7 +61,6 @@ class SiteSettingsSeeder extends Seeder
         'contact.phone',
         'contact.address',
         'seo.default_description',
-        'email.from_address',
         'email.enquiry_recipient',
     ];
 
