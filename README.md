@@ -1,9 +1,12 @@
-# InspAYA Consult
+# InspAya Consult
 
-The InspAYA Consult website: a public site (home, services, consultants,
-insights, contact) and an admin CMS behind `/admin`. Built with Laravel 13
-and Blade views. Assets (`public/css`, `public/js`, `public/admin-assets`)
-are plain committed files — there is no frontend build step.
+The InspAya Consult website: a public site (home, services, consultants,
+insights, contact) and an admin CMS behind `/admin`. Laravel 13, PHP 8.4+,
+Blade views, MySQL in production (SQLite locally). There is **no frontend build
+step**: the CSS and JS in `public/css`, `public/js` and `public/admin-assets`
+are plain committed files, and there is no Node, Vite or Tailwind.
+
+Putting it on a server? Go straight to **[docs/deployment.md](docs/deployment.md)**.
 
 ---
 
@@ -11,9 +14,9 @@ are plain committed files — there is no frontend build step.
 
 | Tool | Version |
 |---|---|
-| PHP | 8.4 or newer, with the `pdo_sqlite`, `mbstring`, `openssl` and `fileinfo` extensions |
+| PHP | **8.4 or newer**, with `pdo_sqlite` (local/tests), `pdo_mysql` (MySQL), `mbstring`, `openssl`, `fileinfo`, `dom` |
 | Composer | 2.x |
-| MySQL | 8.0+ (or MariaDB 10.6+) — only needed if you want to run against MySQL locally; SQLite is the default |
+| MySQL | 8.0+ (or MariaDB 10.6+). Optional locally: SQLite is the default. Needed to run the tests the way CI does. |
 
 Check with `php -v` and `composer -V`.
 
@@ -21,211 +24,165 @@ Check with `php -v` and `composer -V`.
 
 ## 2. First-time setup
 
-Run these from the project folder.
-
-**1. Install dependencies, create `.env`, generate the app key**
+Run from the project folder.
 
 ```bash
 composer install
-```
-
-```bash
 cp .env.example .env
-```
-
-```bash
 php artisan key:generate
 ```
 
-**2. Set the Super Admin account in `.env`**
-
-There are no default credentials. The seeder refuses to run until all four of
-these are filled in, and the password must be at least 12 characters:
+**Set the Super Admin in `.env`.** There are no default credentials. The seeder
+refuses to run until all four are filled in; the password needs 12+ characters:
 
 ```dotenv
 SUPER_ADMIN_NAME="Your Name"
 SUPER_ADMIN_USERNAME=admin
-SUPER_ADMIN_EMAIL=you@example.com
+SUPER_ADMIN_EMAIL=you@example.test
 SUPER_ADMIN_PASSWORD="a-strong-password-12+"
 ```
 
-**3. Create the database, tables and seed data**
-
-`.env` defaults to SQLite (`DB_CONNECTION=sqlite`):
+**Create the database and seed it.** `.env.example` defaults to SQLite:
 
 ```bash
 touch database/database.sqlite
-```
-
-```bash
-php artisan migrate:fresh --seed
-```
-
-Seeding creates roles and permissions, the Super Admin, site settings,
-services and core values. Outside production it also adds **placeholder demo
-content**: CMS pages (Home, About, Contact, Privacy, Terms), consultants and
-blog posts, so every public page has something to show.
-
-> To use MySQL instead, set `DB_CONNECTION=mysql` and the `DB_HOST` /
-> `DB_PORT` / `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` lines in `.env`
-> to a real MySQL 8+ database, then run the same `migrate:fresh --seed`.
-
-**4. Link public storage** (so uploaded images are served at `/storage/...`)
-
-```bash
+php artisan migrate --seed
 php artisan storage:link
 ```
+
+Seeding creates roles and permissions, the Super Admin, settings, the seven
+services and six core values. Outside production it also adds **placeholder
+demo content** (pages, consultants, blog posts, testimonials, FAQs) so every
+public page has something to show. In production it adds none of that and
+publishes nothing placeholder; see [docs/launch.md](docs/launch.md).
+
+To use MySQL locally instead, set `DB_CONNECTION=mysql` and the `DB_*` lines in
+`.env`, then run `php artisan migrate:fresh --seed`. `migrate:fresh` wipes
+every table: never run it against a real database.
 
 ---
 
 ## 3. Running the app
 
-The quickest way starts the web server, the queue worker and the log viewer
-together:
-
 ```bash
-composer run dev
+composer run dev          # starts the local dev processes; see: php artisan dev --help
 ```
 
-Or run the pieces yourself, each in its own terminal:
+or each piece in its own terminal:
 
 ```bash
 php artisan serve
-```
-
-```bash
 php artisan queue:work
 ```
 
-Then open **http://localhost:8000**.
+Open **http://localhost:8000**.
 
-**Why the queue worker matters:** the contact form and password reset emails
-are queued. Without a worker they sit in the `jobs` table and are never sent.
-Locally, `MAIL_MAILER=log`, so "sent" emails are written to
-`storage/logs/laravel.log` instead of a real inbox. That's where you'll find
-password reset links during development.
+**Why the queue worker matters:** contact-form and password-reset emails are
+queued; without a worker they sit in the `jobs` table and are never sent.
+Locally `MAIL_MAILER=log`, so "sent" emails are written to
+`storage/logs/laravel.log`: that is where reset links appear in development.
+
+Scheduled work (scheduled posts, audit pruning, the health heartbeat) runs from
+`php artisan schedule:run`; locally use `php artisan schedule:work` if you need
+it.
 
 ---
 
-## 4. Site map: the public website
+## 4. The public site
 
-All public pages are read-only and share the same header, footer and main menu.
-
-| Page | URL | What it shows |
+| Page | URL | Notes |
 |---|---|---|
-| Home | `/` | Hero, services, core values, up to 4 consultants, latest 3 insights |
-| About | `/about` | Vision, mission, story, leadership (hidden from the menu until the page is published) |
-| Services | `/services` | All active services |
-| Service detail | `/services/{slug}` | Full description, capabilities, outcomes, consultants on that service |
-| Consultants | `/consultants` | Active consultants with their services |
-| Core Values | `/core-values` | The firm's core values |
-| Insights | `/insights` | Blog articles, 9 per page (`?page=2` etc.) |
-| Article | `/insights/{slug}` | One article with related articles and share links |
-| Contact | `/contact` | Contact form |
-| Privacy Policy | `/privacy-policy` | Only once published |
-| Terms of Service | `/terms-of-service` | Only once published |
-| `sitemap.xml`, `robots.txt` | — | Generated, list only published URLs (see [docs/frontend-contract.md](docs/frontend-contract.md)) |
+| Home | `/` | Hero, services, core values, consultants, latest insights, testimonials |
+| About | `/about` | 404 until the About page is published |
+| Services | `/services`, `/services/{slug}` | Active services only |
+| Consultants | `/consultants` | Active consultants |
+| Core Values | `/core-values` | Active values |
+| Insights | `/insights`, `/insights/{slug}` | Published blog posts ("Blog" in the CMS) |
+| Contact | `/contact` | Form, FAQs; rate limited (3/minute, 10/hour per IP) |
+| Privacy Policy, Terms | `/privacy-policy`, `/terms-of-service` | 404 until published |
+| `sitemap.xml`, `robots.txt` | | Generated; published URLs only |
+| Health | `/up` | `{"status":"ok"}` or 503; checks the database |
 
-Things worth knowing when clicking around:
-
-- **A 404 usually means "not public", not "broken".** Unpublished pages,
-  inactive services, draft or scheduled articles and badly shaped slugs
-  (capitals, underscores) all return the site's 404 page.
-- **Contact form:** name, email, subject, message and the privacy checkbox are
-  required. On success you're sent back to `/contact` with a confirmation
-  message. It is rate limited to 3 submissions a minute / 10 an hour per IP;
-  going over shows the 429 page.
-- **Insights vs Blog:** visitors see "Insights"; the CMS calls the same content
-  "Blog".
-
-Full details of every page and the data it receives are in
+A 404 usually means "not public", not "broken": unpublished pages, inactive
+services, draft or scheduled posts, and badly shaped slugs all return the
+site's 404 page. Details of every page and the data it receives:
 [docs/frontend-contract.md](docs/frontend-contract.md).
 
 ---
 
 ## 5. The admin CMS
 
-### Signing in
-
-Go to **http://localhost:8000/admin/login** and sign in with the
-`SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD` you set in `.env`. There is no
-link to the admin from the public site; type the URL.
-
-- Wrong password, unknown email and deactivated account all show the same
-  error, on purpose.
-- After 5 failed attempts for the same email and IP you're locked out for
-  60 seconds (429 page).
-- If you're already signed in, `/admin/login` sends you straight to the
-  dashboard.
-
-### Forgot / reset password
-
-| Step | URL |
-|---|---|
-| Request a reset link | `/admin/forgot-password` |
-| Open the link from the email | `/admin/reset-password/{token}` |
-
-Locally, find the link in `storage/logs/laravel.log` (the queue worker must be
-running). Links expire after 60 minutes. New passwords must be at least 12
-characters with upper- and lower-case letters, a number and a symbol.
-
-### Admin sections
-
-Everything below is under `/admin` and requires signing in.
+Go to **/admin/login** (there is no link from the public site) and sign in with
+the Super Admin you seeded. Wrong password, unknown email and a deactivated
+account show the same error on purpose. Sign-in is throttled per email and IP
+(5 failures, 60 s) and per IP across all emails (20 failures, 10 minutes).
+Password reset: `/admin/forgot-password`; links expire after 60 minutes; new
+passwords need 12+ characters with upper and lower case, a number and a symbol.
 
 | Section | URL | Purpose |
 |---|---|---|
-| Dashboard | `/admin` | Counts for each content type, links into each section |
-| Theme & Content | `/admin/settings` | Site name, logos, colours, homepage headings, footer contact details |
-| Services | `/admin/services` | List, add, edit, delete, reorder |
-| Consultants | `/admin/consultants` | Same pattern |
-| Core Values | `/admin/core-values` | Same pattern |
-| Pages | `/admin/pages` | About, Privacy Policy, Terms of Service |
-| Blog / Insights | `/admin/posts` | Posts, plus categories (`/admin/categories`) and tags (`/admin/tags`) |
-| Media | `/admin/media` | Uploaded images used across the site |
-| Enquiries | `/admin/enquiries` | Contact form submissions, with internal notes |
-| Users | `/admin/users` | CMS accounts (Super Admin only for user management) |
-| Audit Log | `/admin/audit-logs` | Read-only history of who changed what |
+| Dashboard | `/admin` | Counts, recent activity, and a "Needs attention" box (new enquiries, approvals, failed emails, stuck queue) |
+| Pages | `/admin/pages` | Home, About, Privacy, Terms and their sections |
+| Services, Consultants, Core Values | `/admin/services` etc. | List, add, edit, delete, reorder, activate |
+| Testimonials, FAQs | `/admin/testimonials`, `/admin/faqs` | Same pattern |
+| Blog | `/admin/posts` | Posts, plus categories and tags |
+| Media | `/admin/media` | Uploads (images, PDFs) with required alt text |
+| Enquiries | `/admin/enquiries` | Contact submissions, status, internal notes, CSV export |
+| Content approvals | `/admin/content-approvals` | Edits to live pages and posts awaiting review ([docs/content-approval.md](docs/content-approval.md)) |
+| Users | `/admin/users` | CMS accounts |
+| Settings | `/admin/settings` | Site name, logos, contact details, social links, meta defaults, email addresses, analytics ID |
+| Audit log | `/admin/audit-logs` | Read-only history of who changed what |
+| Health detail | `/admin/health` | JSON: queue backlog, failed jobs, scheduler heartbeat |
 
-Logout is a button (POST), not a link.
-
-### Roles
-
-Four roles are seeded. Every account gets exactly one.
+Four roles are seeded; each account has exactly one.
 
 | Role | Can do |
 |---|---|
-| Super Admin | Everything, including users, roles and audit logs |
-| Administrator | All content and settings; manages users but can't edit roles or touch a Super Admin |
-| Editor | Edits services, values, consultants, pages and any blog post; handles enquiries; cannot publish |
-| Author | Writes and edits their own blog posts before publication; uploads media |
+| Super Admin | Everything, including roles and the audit log |
+| Administrator | All content and settings, publishing and approvals, users (not roles or Super Admins) |
+| Editor | Edits services, values, consultants, pages and posts; handles enquiries; cannot publish, and edits to live pages and posts wait for approval |
+| Author | Writes and edits their own draft posts; uploads media |
 
-Rules and edge cases are in [docs/admin-auth.md](docs/admin-auth.md).
+Rules and edge cases: [docs/admin-auth.md](docs/admin-auth.md).
 
 ---
 
-## 6. Everyday commands
+## 6. Tests
+
+The suite needs no setup on SQLite (in memory):
+
+```bash
+composer test                         # same as: php artisan test
+vendor/bin/pint --test                # code style, as CI checks it
+```
+
+CI also runs the whole suite against **MySQL 8**, where the two row-lock tests
+(skipped on SQLite) really run. To do the same locally, create an empty
+database whose name **ends in `_testing`** (`tests/TestCase.php` refuses
+anything else, because `RefreshDatabase` wipes the target) and pass the
+connection as environment variables:
+
+```bash
+mysql -uroot -e "CREATE DATABASE inspaya_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 \
+DB_DATABASE=inspaya_testing DB_USERNAME=root DB_PASSWORD= \
+vendor/bin/phpunit --fail-on-skipped
+```
+
+Exports like these override `.env`, so your development database is never
+touched. Use `PAO_DISABLE=1` before the command for plain PHPUnit output.
+`.github/workflows/ci.yml` shows the full setup, including a migrate and seed
+run against MySQL before the tests.
+
+Other everyday commands:
 
 | Task | Command |
 |---|---|
-| Run the test suite (SQLite, the default) | `composer test` |
-| Run the test suite against MySQL | set `DB_CONNECTION=mysql` etc. to a database whose name **ends in `_testing`**, then `composer test` (see below) |
-| Format PHP code | `./vendor/bin/pint` |
-| Reset the database and reseed demo content | `php artisan migrate:fresh --seed` |
-| Tail the logs (including local emails) | `php artisan pail` |
-| List every route | `php artisan route:list` |
+| Tail logs | `php artisan pail` |
+| List routes | `php artisan route:list` |
+| Pre-launch gate | `php artisan launch:check` |
 | Poke at data | `php artisan tinker` |
-
-> `migrate:fresh` wipes every table. Never run it against a real database.
-
-**Running tests against MySQL:** `tests/TestCase.php` refuses to boot against
-anything but SQLite or a database whose name ends in `_testing`, precisely so
-a mis-set `DB_DATABASE` can never wipe a real one (`RefreshDatabase` wipes the
-target between tests). Point a separate `.env.testing`, or exported
-`DB_*` environment variables, at a scratch database such as
-`inspaya_testing` before running `composer test`. `.github/workflows/ci.yml`
-does exactly this against a throwaway MySQL 8 service container, on every
-push — see it there for a working example.
 
 ---
 
@@ -234,18 +191,23 @@ push — see it there for a working example.
 | Symptom | Fix |
 |---|---|
 | `Cannot seed the Super Admin: set SUPER_ADMIN_…` | Fill in all four `SUPER_ADMIN_*` values in `.env` (password 12+ characters), then `php artisan db:seed`. |
-| `Refusing to run tests against [...] database [...]` | You're pointed at a real database. Use SQLite or a database whose name ends in `_testing`. |
-| Uploaded images don't show | Run `php artisan storage:link` and check `APP_URL` matches the address in your browser. |
-| No reset email / contact emails | Start `php artisan queue:work`; locally, look in `storage/logs/laravel.log`. |
+| `Refusing to run tests against [...]` | You are pointed at a real database. Use SQLite or a database whose name ends in `_testing`. |
+| Uploaded images don't show | `php artisan storage:link`, and make `APP_URL` match the address in your browser. |
+| No reset or contact emails | Start `php artisan queue:work`; locally read `storage/logs/laravel.log`. In production see the failed-jobs section of [docs/admin-auth.md](docs/admin-auth.md). |
 | `No application encryption key` | `php artisan key:generate` |
-| A public page 404s | It's probably unpublished, inactive or scheduled. Check the record, or reseed demo content. |
-| Changed `.env` but nothing happened | `php artisan config:clear` |
+| A public page 404s | It is probably unpublished, inactive or scheduled. |
+| Changed `.env`, nothing happened | `php artisan config:clear` (production: `config:cache`). |
+| Redirect loop in production | `TRUSTED_PROXIES` is wrong or blank behind a proxy; see [docs/deployment.md](docs/deployment.md). |
 
 ---
 
-## 8. Further documentation
+## 8. Documentation
 
+- [docs/deployment.md](docs/deployment.md): server setup, nginx/Apache, environment, first deploy, queue worker, cron, backups and restore, deploys and rollback, monitoring, client content checklist
+- [docs/launch.md](docs/launch.md): `php artisan launch:check` and what the production seed publishes
+- [docs/admin-auth.md](docs/admin-auth.md): sign-in rules, throttling, password policy, email and queue setup, failed jobs, HSTS and trusted proxies
+- [docs/content-approval.md](docs/content-approval.md): how edits to live content are reviewed
+- [docs/admin-media.md](docs/admin-media.md): how uploads are validated, stored and served
 - [docs/frontend-contract.md](docs/frontend-contract.md): every public route, view and the data it receives
-- [docs/admin-auth.md](docs/admin-auth.md): sign-in rules, password policy, email setup, roles and permissions — including the [production-only settings](docs/admin-auth.md#production-settings-not-enforceable-from-app-code) (`SESSION_SECURE_COOKIE`, trusted proxies for `ForceHttps`, the CSP) that only get set correctly by the deployment `.env`, not by app code
-- [docs/admin-media.md](docs/admin-media.md): how uploaded media is stored, validated and served
-- [docs/database/schema-plan.md](docs/database/schema-plan.md): the full table-by-table schema and the decisions behind it
+- [docs/database/schema-plan.md](docs/database/schema-plan.md): the table-by-table schema and the decisions behind it
+- `.env.example` (local development) and `.env.production.example` (servers)
