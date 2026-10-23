@@ -41,7 +41,7 @@ Signed-in users who open the sign-in or reset pages are sent to the dashboard.
 
 | Rule | Detail |
 |---|---|
-| Throttling | 5 failed attempts per **email + IP** → 429 with `Retry-After` for 60 s. A success clears the count. The correct password is also refused while throttled. |
+| Throttling | Two limits, both answered with **429** and `Retry-After`, and both refuse even the correct password while active. **Per email + IP:** 5 failed attempts, then 60 s; a success clears this count. **Per IP, across all emails:** 20 failed attempts, then 10 minutes (`IP_MAX_ATTEMPTS` / `IP_DECAY_SECONDS` in `AdminLoginController`), so trying many emails from one address cannot dodge the first limit. 20 leaves room for a small office behind one NAT, but one person mistyping repeatedly can lock colleagues on the same address out for up to 10 minutes. A success does not clear the per-IP count. |
 | Forgot/reset forms | 5 requests per minute per email + IP (plus Laravel's one-email-per-minute per account). |
 | Account status | Only `active` users can sign in. A user deactivated while signed in is signed out on their next request. |
 | Session | The session id is regenerated at sign-in; sign-out invalidates the session and CSRF token. Changing or resetting a password signs out the user's other sessions. |
@@ -54,7 +54,11 @@ Failed sign-ins are the one audit event an anonymous visitor can trigger, so
 they are capped: at most **one `login_failed` row per email + IP per minute**,
 and **one `login_throttled` row per throttle window** (the 429 is still
 returned on every request; only the audit row is suppressed). The throttle
-itself still counts every attempt.
+itself still counts every attempt. Once an IP passes the per-IP limit (see
+above) its requests are refused before any lookup, so they write no
+`login_failed` rows at all: one IP can write at most 20 `login_failed` rows
+and 1 `login_throttled` row per 10 minutes. Many different IPs can still each
+write their own rows; the daily prune bounds that.
 
 `php artisan audit:prune-login-noise` (scheduled daily at 03:30, so it needs the
 `schedule:run` cron below) deletes `login_failed` and `login_throttled` rows
@@ -107,7 +111,44 @@ response, the audit log and the application log all look completely normal,
 because from the app's point of view the job was queued successfully; it is
 simply never picked up. This is a launch-day failure mode with zero
 diagnostic signal of its own — confirm a queue worker is running as part of
-the deployment checklist, not after someone reports a missing email.
+the deployment checklist, not after someone reports a missing email. (The
+dashboard now warns Admins once a queued job has waited over 15 minutes; see
+below. That is a backstop, not a substitute for checking.)
+
+### Failed and stuck jobs
+
+Run the worker with a restart policy (supervisor/systemd) and, after each
+deploy, `php artisan queue:restart` so it picks up new code.
+
+Both contact-form emails retry **5 times** with 1, 5, 15 and 60 minute waits
+(about 80 minutes in total) before giving up. A job that gives up is moved to
+the `failed_jobs` table. The enquiry itself is always saved first, so a visitor
+seeing "Thank you" is accurate; only the emails can fail.
+
+What staff see on the dashboard:
+
+| Alert | Meaning | Who sees it |
+|---|---|---|
+| "N contact-form notifications to the company could not be emailed…" (links to the inbox) | `EnquiryReceived` failed for good: nobody was emailed about those enquiries. Open the inbox and look for any you have not seen. | Anyone who can view enquiries |
+| "N background jobs failed…" | Any other failed job, including visitor confirmation emails (named separately). | Admins (`settings.manage`) |
+| "Queued jobs… have been waiting over 15 minutes" | The worker is almost certainly not running (or is stuck). | Admins |
+
+On the server:
+
+```bash
+php artisan queue:failed          # list failed jobs and why (the exception is shown)
+php artisan queue:retry all       # after fixing the cause, usually MAIL_* settings
+php artisan queue:retry <uuid>    # one job
+php artisan queue:forget <uuid>   # discard one you do not want
+php artisan queue:flush           # discard all of them
+```
+
+A stuck queue looks like: new enquiries appear in the inbox but no email
+arrives, the `jobs` table keeps growing, and `jobs.attempts` stays 0 on old
+rows. Check the worker is running (`supervisorctl status`) and its log. A
+queue that is failing looks like: `failed_jobs` grows and the exception names
+the mail server (for example "Connection could not be established").
+`php artisan launch:check` also fails while `failed_jobs` is not empty.
 
 ### Scheduled publishing
 
