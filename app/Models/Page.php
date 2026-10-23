@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PageStatus;
 use App\Models\Concerns\HasAuditTrail;
 use App\Models\Concerns\HasPendingRevisions;
+use App\Models\Concerns\HasVersion;
 use Database\Factories\PageFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 class Page extends Model
 {
     /** @use HasFactory<PageFactory> */
-    use HasAuditTrail, HasFactory, HasPendingRevisions;
+    use HasAuditTrail, HasFactory, HasPendingRevisions, HasVersion;
 
     protected $fillable = [
         'title',

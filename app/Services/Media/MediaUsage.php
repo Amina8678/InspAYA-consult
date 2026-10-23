@@ -8,6 +8,7 @@ use App\Models\CoreValue;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\SiteSetting;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Finds and clears every place a media item is used (plan §3.6): the four
@@ -57,11 +58,13 @@ class MediaUsage
      */
     public function clear(Media $media): void
     {
-        BlogPost::where('featured_image_id', $media->id)->update(['featured_image_id' => null]);
+        // Query-builder updates skip model events, so these two (the only mass
+        // writes to pages and posts) count their own version change.
+        BlogPost::where('featured_image_id', $media->id)->update(['featured_image_id' => null, 'version' => DB::raw('version + 1')]);
         Consultant::where('photo_id', $media->id)->update(['photo_id' => null]);
         CoreValue::where('icon_id', $media->id)->update(['icon_id' => null]);
         SiteSetting::where('media_id', $media->id)->update(['media_id' => null]);
-        Page::where('og_image_id', $media->id)->update(['og_image_id' => null]);
+        Page::where('og_image_id', $media->id)->update(['og_image_id' => null, 'version' => DB::raw('version + 1')]);
 
         foreach ($this->pagesUsing($media) as [$page]) {
             $page->structured_content = collect($page->structured_content)
