@@ -11,8 +11,10 @@ use App\Models\Page;
 use App\Models\PendingRevision;
 use App\Models\Tag;
 use App\Support\ContentApproval;
+use App\Support\RevisionConflict;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /**
@@ -67,17 +69,25 @@ class PendingRevisionController extends Controller
         return view('admin.content-approvals.show', [
             'revision' => $pendingRevision->load(['revisable', 'submitter:id,name']),
             'diff' => $this->diff($pendingRevision),
+            'liveChanged' => $pendingRevision->liveRecordChanged(),
+            'slugTaken' => $this->slugTaken($pendingRevision),
             'typeLabel' => $this->typeLabel($pendingRevision),
         ]);
     }
 
-    public function approve(PendingRevision $pendingRevision): RedirectResponse
+    public function approve(Request $request, PendingRevision $pendingRevision): RedirectResponse
     {
         $this->authorize('approve', $pendingRevision);
         $this->abortIfRecordDeleted($pendingRevision);
 
         $title = $pendingRevision->load('revisable')->revisable->title;
-        $this->approval->apply($pendingRevision, auth()->user());
+
+        try {
+            $this->approval->apply($pendingRevision, $request->user(), force: $request->boolean('confirm_live_change'));
+        } catch (RevisionConflict $conflict) {
+            return redirect()->route('admin.content-approvals.show', $pendingRevision)
+                ->withErrors(['approve' => $conflict->getMessage()]);
+        }
 
         return redirect()->route('admin.content-approvals.index')->with('status', 'Approved the change to "'.$title.'".');
     }
@@ -98,6 +108,19 @@ class PendingRevisionController extends Controller
     private function abortIfRecordDeleted(PendingRevision $revision): void
     {
         abort_if($revision->revisable === null, 404, 'The page or post this change was for has been deleted.');
+    }
+
+    /**
+     * Whether the revision's slug now belongs to a different record, in which
+     * case it cannot be approved at all (not even with the confirmation).
+     */
+    private function slugTaken(PendingRevision $revision): bool
+    {
+        $slug = $revision->changes['slug'] ?? null;
+        $live = $revision->revisable;
+
+        return $slug !== null && $slug !== $live->slug
+            && $live->newQuery()->where('slug', $slug)->whereKeyNot($live->getKey())->exists();
     }
 
     private function typeLabel(PendingRevision $revision): string

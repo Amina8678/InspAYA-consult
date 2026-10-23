@@ -10,6 +10,7 @@ use App\Models\Page;
 use App\Models\PendingRevision;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -49,26 +50,35 @@ class ContentApproval
     public function submit(Model $revisable, User $user, array $changes): PendingRevision
     {
         return DB::transaction(function () use ($revisable, $user, $changes) {
+            // Lock the live page/post row, not the pending row: when this is
+            // the first submission there is no pending row yet, and a
+            // FOR UPDATE on a row that does not exist locks nothing useful
+            // (only a gap, which lets two inserts through, or deadlocks).
+            // Every submission and approval for one record takes this lock
+            // first, so they queue up behind each other.
+            $live = $revisable->newQuery()->whereKey($revisable->getKey())->lockForUpdate()->firstOrFail();
+
             $revision = PendingRevision::query()
-                ->where('revisable_type', $revisable->getMorphClass())
-                ->where('revisable_id', $revisable->getKey())
+                ->where('revisable_type', $live->getMorphClass())
+                ->where('revisable_id', $live->getKey())
                 ->where('status', PendingRevisionStatus::Pending)
-                ->lockForUpdate()
                 ->first() ?? new PendingRevision([
-                    'revisable_type' => $revisable->getMorphClass(),
-                    'revisable_id' => $revisable->getKey(),
+                    'revisable_type' => $live->getMorphClass(),
+                    'revisable_id' => $live->getKey(),
                 ]);
 
             $revision->submitted_by = $user->id;
             $revision->changes = $changes;
+            // The baseline approval compares against, read under the lock.
+            $revision->base_updated_at = $live->updated_at;
             $revision->status = PendingRevisionStatus::Pending;
             $revision->reviewed_by = null;
             $revision->reviewed_at = null;
             $revision->rejection_reason = null;
             $revision->save();
 
-            $this->audit->record('revision_submitted', $user, $revisable,
-                old: $this->currentValues($revisable, $changes),
+            $this->audit->record('revision_submitted', $user, $live,
+                old: $this->currentValues($live, $changes),
                 new: $changes,
             );
 
@@ -80,18 +90,37 @@ class ContentApproval
      * Apply a pending revision's changes to its live record and mark it
      * approved. Re-checks the revision is still pending under a row lock,
      * so a double-click (or two reviewers) can't apply it twice.
+     *
+     * Refuses with a RevisionConflict when the revision's slug now belongs to
+     * another record, or, unless $force, when the live record has been edited
+     * since the revision was submitted.
+     *
+     * @throws RevisionConflict
      */
-    public function apply(PendingRevision $revision, User $approver): void
+    public function apply(PendingRevision $revision, User $approver, bool $force = false): void
     {
-        DB::transaction(function () use ($revision, $approver) {
-            $revision = PendingRevision::query()->whereKey($revision->getKey())->with('revisable')->lockForUpdate()->firstOrFail();
-            if ($revision->status !== PendingRevisionStatus::Pending) {
+        DB::transaction(function () use ($revision, $approver, $force) {
+            // Same lock order as submit(): the live record first, then the
+            // revision, so the two can never wait on each other.
+            $live = $revision->revisable()->lockForUpdate()->first();
+            $revision = PendingRevision::query()->whereKey($revision->getKey())->lockForUpdate()->firstOrFail();
+            if ($revision->status !== PendingRevisionStatus::Pending || $live === null) {
                 return;
             }
+            $revision->setRelation('revisable', $live);
 
-            $revisable = $revision->revisable;
             $changes = $revision->changes;
-            $before = $this->currentValues($revisable, $changes);
+            $liveChanged = $revision->liveRecordChanged();
+
+            if (! $force && $liveChanged) {
+                throw RevisionConflict::liveRecordChanged();
+            }
+
+            if (isset($changes['slug']) && $changes['slug'] !== $live->slug && $this->slugBelongsToAnother($live, $changes['slug'])) {
+                throw RevisionConflict::slugTaken($changes['slug']);
+            }
+
+            $before = $this->currentValues($live, $changes);
 
             $tags = null;
             if (array_key_exists('tags', $changes)) {
@@ -99,10 +128,15 @@ class ContentApproval
                 unset($changes['tags']);
             }
 
-            $revisable->fill($changes);
-            $revisable->save();
-            if ($tags !== null && method_exists($revisable, 'tags')) {
-                $revisable->tags()->sync($tags);
+            $live->fill($changes);
+            try {
+                $live->save();
+            } catch (UniqueConstraintViolationException) {
+                // Another request took the slug between the check and the write.
+                throw RevisionConflict::slugTaken((string) ($changes['slug'] ?? $live->slug));
+            }
+            if ($tags !== null && method_exists($live, 'tags')) {
+                $live->tags()->sync($tags);
             }
 
             $revision->status = PendingRevisionStatus::Approved;
@@ -110,7 +144,8 @@ class ContentApproval
             $revision->reviewed_at = now();
             $revision->save();
 
-            $this->audit->record('revision_approved', $approver, $revisable, $before, $revision->changes);
+            $this->audit->record('revision_approved', $approver, $live, $before,
+                $revision->changes + ($liveChanged ? ['approved_after_live_change' => true] : []));
         });
     }
 
@@ -138,6 +173,11 @@ class ContentApproval
                 'reason' => $reason,
             ]);
         });
+    }
+
+    private function slugBelongsToAnother(Model $live, string $slug): bool
+    {
+        return $live->newQuery()->where('slug', $slug)->whereKeyNot($live->getKey())->exists();
     }
 
     private function isLive(Model $revisable): bool

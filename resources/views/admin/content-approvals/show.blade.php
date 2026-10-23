@@ -24,7 +24,21 @@
             <a href="{{ $editRoute }}">View the current live version</a>.
         </p>
 
-        @include('admin.partials.errors', ['fields' => ['reason' => 'field-reason']])
+        @include('admin.partials.errors', ['fields' => ['approve' => 'details-heading', 'reason' => 'field-reason']])
+
+        @if ($slugTaken)
+            <div class="alert alert--error" role="alert">
+                <p><strong>The proposed URL is now used by another page or post.</strong>
+                This change cannot be approved as it is. Reject it below and ask for a different URL.</p>
+            </div>
+        @elseif ($liveChanged)
+            <div class="alert alert--warning" role="alert">
+                <p><strong>This {{ strtolower($typeLabel) }} changed since the edit was submitted.</strong>
+                The "Currently live" column below is the version live now. Approving replaces every field
+                listed with the proposed value, including any change made since. Reject the edit and ask for
+                a fresh one, or tick the box to approve it anyway.</p>
+            </div>
+        @endif
 
         <table class="table">
             <caption class="visually-hidden">Proposed changes</caption>
@@ -47,10 +61,20 @@
         </table>
 
         <div class="actions">
-            <form method="POST" action="{{ route('admin.content-approvals.approve', $revision) }}">
-                @csrf
-                <button type="submit" class="button">Approve and publish this change</button>
-            </form>
+            @unless ($slugTaken)
+                <form method="POST" action="{{ route('admin.content-approvals.approve', $revision) }}">
+                    @csrf
+                    @if ($liveChanged)
+                        <div class="field">
+                            <label>
+                                <input type="checkbox" name="confirm_live_change" value="1" required>
+                                I have compared the differences and want to overwrite the live changes
+                            </label>
+                        </div>
+                    @endif
+                    <button type="submit" class="button">{{ $liveChanged ? 'Approve anyway' : 'Approve and publish this change' }}</button>
+                </form>
+            @endunless
         </div>
     </section>
 
