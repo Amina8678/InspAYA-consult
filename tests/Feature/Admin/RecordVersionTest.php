@@ -50,6 +50,11 @@ class RecordVersionTest extends TestCase
 
     public function test_the_demo_seed_works_and_everything_it_creates_is_version_1(): void
     {
+        // CI has no .env, so the seeder's credentials must come from the test.
+        config(['inspaya.super_admin' => [
+            'name' => 'Test Admin', 'username' => 'test-admin',
+            'email' => 'admin@example.test', 'password' => 'a-long-enough-password-1',
+        ]]);
         $this->seed(DatabaseSeeder::class);
 
         $this->assertGreaterThan(0, Page::count());
