@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\UserStatus;
+use App\Http\Controllers\Site\ContactController;
 use App\Models\AuditLog;
 use App\Models\BlogPost;
 use App\Models\Category;
@@ -35,6 +36,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -90,6 +92,31 @@ class AppServiceProvider extends ServiceProvider
             return response()->view('admin.errors.429', [
                 'retryAfter' => is_numeric($retryAfter) ? (int) $retryAfter : null,
             ], 429, $e->getHeaders());
+        });
+
+        // Expired session or CSRF token (419). The contact form is the one
+        // public form whose input is worth keeping: send the visitor back to
+        // it with their text filled in and a clear note, instead of an error
+        // page that discards what they typed. Consent is deliberately not
+        // carried over; they must tick it again. Admin screens get a branded
+        // page; everything else falls through to errors/419.
+        $this->app->make(ExceptionHandler::class)->renderable(function (HttpException $e, Request $request) {
+            // Laravel has already turned the TokenMismatchException into a 419 HttpException by now.
+            if ($e->getStatusCode() !== 419 || $request->expectsJson()) {
+                return null;
+            }
+
+            if ($request->routeIs('contact.store')) {
+                return redirect()->route('contact')
+                    ->withInput($request->except(['_token', 'consent', ContactController::HONEYPOT]))
+                    ->withErrors(['session' => 'Your page had been open for a while and expired, so your message was not sent. We have kept what you typed: please tick the box to confirm you have read the privacy notice, then send it again.']);
+            }
+
+            if ($request->is('admin', 'admin/*')) {
+                return response()->view('admin.errors.419', [], 419);
+            }
+
+            return null;
         });
 
         // Reset emails link to the admin reset page (there is no public one).

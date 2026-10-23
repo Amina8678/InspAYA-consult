@@ -48,6 +48,9 @@
     @endif
     <meta name="twitter:card" content="{{ $seo['og_image'] ? 'summary_large_image' : 'summary' }}">
 
+    {{-- Neutral placeholder icon (navy square, gold I); replace the two files in public/ with the client's mark. --}}
+    <link rel="icon" href="{{ \App\Support\Assets::url('favicon.svg') }}" type="image/svg+xml">
+    <link rel="icon" href="{{ \App\Support\Assets::url('favicon.ico') }}" sizes="32x32">
     <link rel="stylesheet" href="{{ \App\Support\Assets::url('css/theme.css') }}">
     <link rel="stylesheet" href="{{ \App\Support\Assets::url('css/site.css') }}">
 

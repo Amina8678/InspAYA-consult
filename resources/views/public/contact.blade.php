@@ -4,7 +4,7 @@
 @php
     $contact = data_get($settings, 'contact', []);
     $privacyUrl = collect($footer['legal'] ?? [])->firstWhere('url', route('privacy-policy'))['url'] ?? null;
-    $fieldOrder = ['name', 'email', 'phone', 'organization', 'subject', 'message', 'consent', 'website'];
+    $fieldOrder = ['session', 'name', 'email', 'phone', 'organization', 'subject', 'message', 'consent', 'website'];
     $faqSchema = empty($faqs) ? null : array_filter([
         '@context' => 'https://schema.org',
         '@type' => 'FAQPage',
@@ -70,7 +70,7 @@
                             @foreach ($fieldOrder as $field)
                                 @if ($errors->has($field))
                                     <li>
-                                        @if ($field === 'website')
+                                        @if (in_array($field, ['website', 'session'], true))
                                             {{ $errors->first($field) }}
                                         @else
                                             <a href="#field-{{ $field }}">{{ $errors->first($field) }}</a>

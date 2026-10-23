@@ -40,6 +40,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title') | {{ config('app.name') }} CMS</title>
+    <link rel="icon" href="{{ \App\Support\Assets::url('favicon.svg') }}" type="image/svg+xml">
+    <link rel="icon" href="{{ \App\Support\Assets::url('favicon.ico') }}" sizes="32x32">
     <link rel="stylesheet" href="{{ \App\Support\Assets::url('admin-assets/admin.css') }}">
 </head>
 <body>
