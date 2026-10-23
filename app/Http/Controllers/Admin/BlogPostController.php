@@ -13,6 +13,7 @@ use App\Support\AuditLogger;
 use App\Support\ContentApproval;
 use App\Support\MediaPicker;
 use App\Support\Slug;
+use App\Support\StaleEdit;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -108,27 +109,44 @@ class BlogPostController extends Controller
                 $changes['tags'] = array_map('intval', (array) $request->validated('tags'));
             }
 
-            $this->approval->submit($post, $request->user(), $changes);
+            $this->approval->submit($post, $request->user(), $changes, $request->filled('version') ? $request->integer('version') : null);
 
             return redirect()->route('admin.posts.edit', $post)
                 ->with('status', 'Submitted your changes to "'.$post->title.'" for approval.');
         }
 
-        $before = $post->only(self::AUDITED);
-        $tagsBefore = $this->tagsOf($post);
-        $statusBefore = $post->status;
+        try {
+            [$post, $before, $tagsBefore, $statusBefore, $changed, $statusChange] = DB::transaction(function () use ($request, $post) {
+                // Lock the row and check the form's version under the lock, so
+                // two people saving at once cannot both win.
+                $post = BlogPost::query()->whereKey($post->id)->lockForUpdate()->firstOrFail();
+                StaleEdit::assertCurrent($post, $request->input('version'));
 
-        $post->fill($this->contentFields($request));
-        // An empty slug keeps the current one, so a live URL never changes by accident.
-        $post->slug = $request->validated('slug') ?: $post->slug;
-        $statusChange = $this->applyStatus($request, $post);
+                $before = $post->only(self::AUDITED);
+                $tagsBefore = $this->tagsOf($post);
+                $statusBefore = $post->status;
 
-        $changed = array_keys($post->getDirty());
+                $post->fill($this->contentFields($request));
+                // An empty slug keeps the current one, so a live URL never changes by accident.
+                $post->slug = $request->validated('slug') ?: $post->slug;
+                $statusChange = $this->applyStatus($request, $post);
 
-        DB::transaction(function () use ($request, $post) {
-            $post->save();
-            $this->syncTags($request, $post);
-        });
+                $changed = array_keys($post->getDirty());
+
+                $post->save();
+                $tagsChanged = $this->syncTags($request, $post);
+                // A tag-only change leaves the row itself unwritten, so count it.
+                if ($tagsChanged && $changed === []) {
+                    $post->bumpVersion();
+                }
+
+                return [$post, $before, $tagsBefore, $statusBefore, $changed, $statusChange];
+            });
+        } catch (StaleEdit $stale) {
+            return redirect()->route('admin.posts.edit', $post)
+                ->withInput($request->except(['_token', '_method']))
+                ->withErrors(['version' => $stale->getMessage()]);
+        }
 
         $tagsAfter = $this->tagsOf($post);
         $old = array_intersect_key($before, array_flip($changed));
@@ -287,13 +305,16 @@ class BlogPostController extends Controller
      * the post's content may change them, untouched when the form didn't
      * include the field (e.g. a status-only crafted request).
      */
-    private function syncTags(BlogPostRequest $request, BlogPost $post): void
+    /**
+     * @return bool whether the post's tags actually changed
+     */
+    private function syncTags(BlogPostRequest $request, BlogPost $post): bool
     {
         if (! $request->has('tags')) {
-            return;
+            return false;
         }
 
-        $post->tags()->sync((array) $request->validated('tags'));
+        return array_filter($post->tags()->sync((array) $request->validated('tags'))) !== [];
     }
 
     /**

@@ -27,7 +27,7 @@ class PendingRevision extends Model
         'revisable_id',
         'submitted_by',
         'changes',
-        'base_updated_at',
+        'base_version',
         'status',
         'reviewed_by',
         'reviewed_at',
@@ -48,22 +48,22 @@ class PendingRevision extends Model
     {
         return [
             'changes' => 'array',
-            'base_updated_at' => 'datetime',
             'status' => PendingRevisionStatus::class,
             'reviewed_at' => 'datetime',
         ];
     }
 
     /**
-     * True when the live record was edited after this revision was submitted.
-     * Revisions without a recorded baseline (submitted before it existed)
-     * report false: there is nothing to compare against.
+     * True when the live record was changed after the form this revision came
+     * from was loaded (its version has moved). Revisions without a recorded
+     * baseline (created before versions existed) report false: there is
+     * nothing to compare against.
      */
     public function liveRecordChanged(): bool
     {
-        $live = $this->revisable?->updated_at;
+        $live = $this->revisable;
 
-        return $this->base_updated_at !== null && $live !== null && ! $live->equalTo($this->base_updated_at);
+        return $this->base_version !== null && $live !== null && (int) $live->version !== (int) $this->base_version;
     }
 
     /**

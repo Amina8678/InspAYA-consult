@@ -41,21 +41,21 @@ class ContentApprovalConflictTest extends TestCase
             'revisable_type' => $record->getMorphClass(), 'revisable_id' => $record->id,
             'submitted_by' => User::factory()->withRole('editor')->create()->id,
             'changes' => $changes,
-            'base_updated_at' => $withBaseline ? $record->updated_at : null,
+            'base_version' => $withBaseline ? $record->version : null,
         ]);
     }
 
-    public function test_submitting_records_the_live_records_updated_at(): void
+    public function test_submitting_records_the_version_the_form_was_loaded_with(): void
     {
         $about = Page::factory()->published()->create(['slug' => 'about', 'title' => 'About us']);
         $this->as('editor');
 
         $this->put(route('admin.pages.update', $about), [
-            'title' => 'About us v2', 'slug' => '', 'meta_title' => '', 'meta_description' => '', 'canonical_url' => '', 'og_image_id' => '',
+            'title' => 'About us v2', 'version' => $about->version, 'slug' => '', 'meta_title' => '', 'meta_description' => '', 'canonical_url' => '', 'og_image_id' => '',
             'sections' => [['type' => 'text', 'heading' => 'How we work', 'body' => 'Updated body copy.']],
         ])->assertSessionHasNoErrors();
 
-        $this->assertTrue(PendingRevision::sole()->base_updated_at->equalTo($about->fresh()->updated_at));
+        $this->assertSame(1, PendingRevision::sole()->base_version);
     }
 
     public function test_an_unchanged_record_approves_without_any_confirmation(): void
@@ -75,7 +75,6 @@ class ContentApprovalConflictTest extends TestCase
     {
         $about = Page::factory()->published()->create(['slug' => 'about', 'title' => 'About us']);
         $revision = $this->pendingFor($about, ['title' => 'Editor title']);
-        $this->travel(5)->minutes();
         $about->update(['title' => 'Admin title']);
         $this->as('administrator');
 
@@ -93,7 +92,6 @@ class ContentApprovalConflictTest extends TestCase
     {
         $about = Page::factory()->published()->create(['slug' => 'about', 'title' => 'About us']);
         $revision = $this->pendingFor($about, ['title' => 'Editor title']);
-        $this->travel(5)->minutes();
         $about->update(['title' => 'Admin title']);
         $this->as('administrator');
 
@@ -109,7 +107,6 @@ class ContentApprovalConflictTest extends TestCase
     {
         $about = Page::factory()->published()->create(['slug' => 'about', 'title' => 'About us']);
         $revision = $this->pendingFor($about, ['title' => 'Editor title']);
-        $this->travel(5)->minutes();
         $about->update(['title' => 'Admin title']);
         $this->as('administrator');
 
@@ -126,7 +123,6 @@ class ContentApprovalConflictTest extends TestCase
     {
         $post = BlogPost::factory()->published()->create(['title' => 'Post']);
         $revision = $this->pendingFor($post, ['title' => 'Editor post title']);
-        $this->travel(5)->minutes();
         $post->update(['excerpt' => 'Edited meanwhile']);
         $this->as('administrator');
 
@@ -138,7 +134,6 @@ class ContentApprovalConflictTest extends TestCase
     {
         $about = Page::factory()->published()->create(['slug' => 'about', 'title' => 'About us']);
         $revision = $this->pendingFor($about, ['title' => 'Old-style revision'], withBaseline: false);
-        $this->travel(5)->minutes();
         $about->update(['title' => 'Edited since']);
         $this->as('administrator');
 

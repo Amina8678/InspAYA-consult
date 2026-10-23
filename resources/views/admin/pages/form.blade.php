@@ -10,6 +10,7 @@
 
     // Error summary: page fields, then every section error linked to its field.
     $errorFields = [
+        'version' => 'stale-version',
         'title' => 'field-title', 'slug' => 'field-slug', 'confirm_slug_change' => 'field-confirm_slug_change',
         'sections' => 'sections-heading',
     ];
@@ -36,11 +37,15 @@
     @endif
 
     @include('admin.partials.errors', ['fields' => $errorFields])
+    @if ($errors->has('version'))
+        <p id="stale-version"><a href="{{ route('admin.pages.edit', $page) }}" target="_blank" rel="noopener">Open the current version in a new tab</a> (this form and what you typed stay as they are).</p>
+    @endif
 
     <form method="POST" action="{{ $editing ? route('admin.pages.update', $page) : route('admin.pages.store') }}">
         @csrf
         @if ($editing)
             @method('PUT')
+            <input type="hidden" name="version" value="{{ old('version', $page->version) }}">
         @endif
 
         {{-- First submit button in the form, so pressing Enter in a field saves

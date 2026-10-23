@@ -12,6 +12,7 @@ use App\Support\CorePages;
 use App\Support\MediaPicker;
 use App\Support\PageSections;
 use App\Support\Slug;
+use App\Support\StaleEdit;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -94,27 +95,45 @@ class PageController extends Controller
         // content.publish is never changed directly — the live record is
         // left completely untouched, and the edit becomes a pending
         // revision for an Administrator/Super Admin to apply or discard.
+        // The revision remembers the version the form was loaded with, so a
+        // change made to the live page while the Editor was typing is
+        // noticed when it is approved.
         if ($this->approval->needsApproval($page, $request->user())) {
             $changes = $this->contentFields($request);
             if ($request->validated('slug')) {
                 $changes['slug'] = $request->validated('slug');
             }
 
-            $this->approval->submit($page, $request->user(), $changes);
+            $this->approval->submit($page, $request->user(), $changes, $request->filled('version') ? $request->integer('version') : null);
 
             return redirect()->route('admin.pages.edit', $page)
                 ->with('status', 'Submitted your changes to "'.$page->title.'" for approval.');
         }
 
-        $before = $page->only(self::AUDITED);
+        try {
+            [$page, $before, $changed, $statusChange] = DB::transaction(function () use ($request, $page) {
+                // Lock the row and check the form's version under the lock, so
+                // two people saving at once cannot both win.
+                $page = Page::query()->whereKey($page->id)->lockForUpdate()->firstOrFail();
+                StaleEdit::assertCurrent($page, $request->input('version'));
 
-        $page->fill($this->contentFields($request));
-        // An empty slug keeps the current one, so a URL never changes by accident.
-        $page->slug = $request->validated('slug') ?: $page->slug;
-        $statusChange = $this->applyStatus($request, $page);
+                $before = $page->only(self::AUDITED);
 
-        $changed = array_keys($page->getDirty());
-        $page->save();
+                $page->fill($this->contentFields($request));
+                // An empty slug keeps the current one, so a URL never changes by accident.
+                $page->slug = $request->validated('slug') ?: $page->slug;
+                $statusChange = $this->applyStatus($request, $page);
+
+                $changed = array_keys($page->getDirty());
+                $page->save();
+
+                return [$page, $before, $changed, $statusChange];
+            });
+        } catch (StaleEdit $stale) {
+            return redirect()->route('admin.pages.edit', $page)
+                ->withInput($request->except(['_token', '_method']))
+                ->withErrors(['version' => $stale->getMessage()]);
+        }
 
         if ($changed === []) {
             return redirect()->route('admin.pages.edit', $page)->with('status', 'No changes to save.');

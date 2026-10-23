@@ -27,17 +27,22 @@
     @endif
 
     @include('admin.partials.errors', ['fields' => [
+        'version' => 'stale-version',
         'title' => 'field-title', 'slug' => 'field-slug', 'confirm_slug_change' => 'field-confirm_slug_change',
         'excerpt' => 'field-excerpt', 'content' => 'field-content', 'category_id' => 'field-category_id',
         'tags' => 'tags-heading', 'featured_image_id' => 'field-featured_image_id',
         'meta_title' => 'field-meta_title', 'meta_description' => 'field-meta_description', 'canonical_url' => 'field-canonical_url',
         'status' => 'field-status', 'published_at' => 'field-published_at',
     ]])
+    @if ($editing && $errors->has('version'))
+        <p id="stale-version"><a href="{{ route('admin.posts.edit', $post) }}" target="_blank" rel="noopener">Open the current version in a new tab</a> (this form and what you typed stay as they are).</p>
+    @endif
 
     <form method="POST" action="{{ $editing ? route('admin.posts.update', $post) : route('admin.posts.store') }}">
         @csrf
         @if ($editing)
             @method('PUT')
+            <input type="hidden" name="version" value="{{ old('version', $post->version) }}">
         @endif
 
         <div class="actions panel">

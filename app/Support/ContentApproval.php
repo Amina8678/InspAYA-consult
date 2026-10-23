@@ -46,10 +46,12 @@ class ContentApproval
      * sort_order fix guards against — see App\Services\Ordering\SortOrder).
      *
      * @param  array<string, mixed>  $changes  proposed field => new value
+     * @param  int|null  $baseVersion  the version of the record the editing form was loaded with;
+     *                                 when null (no form involved), the version read under the lock now
      */
-    public function submit(Model $revisable, User $user, array $changes): PendingRevision
+    public function submit(Model $revisable, User $user, array $changes, ?int $baseVersion = null): PendingRevision
     {
-        return DB::transaction(function () use ($revisable, $user, $changes) {
+        return DB::transaction(function () use ($revisable, $user, $changes, $baseVersion) {
             // Lock the live page/post row, not the pending row: when this is
             // the first submission there is no pending row yet, and a
             // FOR UPDATE on a row that does not exist locks nothing useful
@@ -69,8 +71,9 @@ class ContentApproval
 
             $revision->submitted_by = $user->id;
             $revision->changes = $changes;
-            // The baseline approval compares against, read under the lock.
-            $revision->base_updated_at = $live->updated_at;
+            // The baseline approval compares against: what the Editor was
+            // looking at, not what the record is now.
+            $revision->base_version = $baseVersion === null ? $live->version : min($baseVersion, $live->version);
             $revision->status = PendingRevisionStatus::Pending;
             $revision->reviewed_by = null;
             $revision->reviewed_at = null;
@@ -136,7 +139,11 @@ class ContentApproval
                 throw RevisionConflict::slugTaken((string) ($changes['slug'] ?? $live->slug));
             }
             if ($tags !== null && method_exists($live, 'tags')) {
-                $live->tags()->sync($tags);
+                $synced = $live->tags()->sync($tags);
+                // A tag-only change leaves the row itself untouched, so count it.
+                if (! $live->wasChanged() && array_filter($synced)) {
+                    $live->bumpVersion();
+                }
             }
 
             $revision->status = PendingRevisionStatus::Approved;

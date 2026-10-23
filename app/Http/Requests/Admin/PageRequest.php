@@ -62,6 +62,8 @@ class PageRequest extends FormRequest
 
         return [
             'title' => ['required', 'string', 'max:255', self::NO_HTML],
+            // The version of the record the form was loaded with (hidden field).
+            'version' => ['nullable', 'integer', 'min:1'],
             'slug' => [
                 'nullable', 'string', 'max:'.Slug::MAX, 'regex:'.Slug::PATTERN,
                 Rule::unique('pages', 'slug')->ignore($page instanceof Page ? $page->id : null),

@@ -46,15 +46,26 @@ Editors still edit directly.
 
 ## Edge cases
 
-- **The live record changed after the edit was submitted.** Each revision
-  records the page's or post's `updated_at` when it is submitted. If the
-  record has been edited since, the review screen says so and the normal
-  Approve button is replaced by a confirmation: tick "I have compared the
-  differences and want to overwrite the live changes" and press **Approve
-  anyway**, or reject. Without the tick the server refuses to approve. An
-  approve-anyway is audited (`approved_after_live_change`). Revisions
-  submitted before this existed have no recorded baseline and are never
+- **The live record changed after the Editor opened the form.** Pages and
+  posts carry an integer `version`, increased by one on every change to the
+  live record. The edit form includes the version it was loaded with in a
+  hidden field, and a revision stores that number as its baseline (not the
+  version at the moment of submitting, so an Editor who sat on a stale form is
+  caught). If the live version has moved by approval time, the review screen
+  says so and the normal Approve button is replaced by a confirmation: tick "I
+  have compared the differences and want to overwrite the live changes" and
+  press **Approve anyway**, or reject. Without the tick the server refuses to
+  approve. An approve-anyway is audited (`approved_after_live_change`).
+  Revisions created before versions existed have no baseline and are never
   called stale.
+- **Two people with publish rights editing the same page or post.** The same
+  hidden version protects direct saves: if the version has moved since the
+  form was opened, the save is refused ("changed by someone else since you
+  opened it"), nothing is written, what was typed stays in the form, and a
+  link opens the current version in a new tab. The check and the write happen
+  under one row lock, so two simultaneous saves cannot both succeed. A form
+  that carries no version (left open across a deploy) is saved without the
+  check.
 - **The slug was taken in the meantime.** If the revision's URL now belongs to
   another page or post, approval is refused with a message (even with the
   confirmation) and only **Reject** is possible; there is no 500.
@@ -68,14 +79,33 @@ Editors still edit directly.
 - Slug changes go through the same path, so a live URL never changes until
   approved.
 
+## How the version is kept
+
+`App\Models\Concerns\HasVersion` (on `Page` and `BlogPost`) adds one to
+`version` in the model's `updating` event, as the SQL expression
+`version + 1`, so it is atomic and covers every Eloquent `save()`, `update()`
+and `touch()`. A save that changes nothing does not count. Writes that do not
+go through a model save must count themselves:
+
+- tag changes on a post (a pivot sync leaves the row untouched) call
+  `bumpVersion()`, in the post editor and when a revision is approved;
+- deleting a media file clears `og_image_id` / `featured_image_id` with two
+  query-builder updates that add `version + 1` themselves
+  (`MediaUsage::clear()`).
+
+`RecordVersionTest` fails if any other code under `app/` or
+`database/seeders/` writes `pages` or `blog_posts` around the model, so a new
+write path cannot be added without deciding how it counts.
+
 ## Limits
 
 - A revision stores the proposed **values**, not a diff. Approving writes those
-  values over the fields it contains. The stale-record check (above) is what
-  stops that from silently discarding someone else's edit; it compares
-  `updated_at`, which has one-second resolution, so an edit in the very same
-  second as the submission is not detected.
+  values over the fields it contains; the version check (above) is what stops
+  that silently discarding someone else's edit.
 - Nothing locks the live record while a revision is pending.
+- After a refused direct save the form keeps the old version, so saving again
+  without reloading is refused again. Open the current version, compare, and
+  re-enter or copy across what you need.
 - Only one pending revision per record, and no comment thread between
   reviewer and Editor beyond the rejection reason.
 - Editors do not get `content.publish`; there is no per-item "approved by"
