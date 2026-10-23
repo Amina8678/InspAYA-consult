@@ -156,8 +156,8 @@ composer test                         # same as: php artisan test
 vendor/bin/pint --test                # code style, as CI checks it
 ```
 
-CI also runs the whole suite against **MySQL 8**, where the two row-lock tests
-(skipped on SQLite) really run. To do the same locally, create an empty
+CI also runs the whole suite against **MySQL 8**, where the four row-lock and
+concurrency tests (skipped on SQLite) really run. To do the same locally, create an empty
 database whose name **ends in `_testing`** (`tests/TestCase.php` refuses
 anything else, because `RefreshDatabase` wipes the target) and pass the
 connection as environment variables:

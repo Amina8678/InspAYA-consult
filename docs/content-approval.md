@@ -46,6 +46,20 @@ Editors still edit directly.
 
 ## Edge cases
 
+- **The live record changed after the edit was submitted.** Each revision
+  records the page's or post's `updated_at` when it is submitted. If the
+  record has been edited since, the review screen says so and the normal
+  Approve button is replaced by a confirmation: tick "I have compared the
+  differences and want to overwrite the live changes" and press **Approve
+  anyway**, or reject. Without the tick the server refuses to approve. An
+  approve-anyway is audited (`approved_after_live_change`). Revisions
+  submitted before this existed have no recorded baseline and are never
+  called stale.
+- **The slug was taken in the meantime.** If the revision's URL now belongs to
+  another page or post, approval is refused with a message (even with the
+  confirmation) and only **Reject** is possible; there is no 500.
+- **Two first submissions at once** are serialised by locking the live page or
+  post row, so only one pending revision ever exists per record.
 - **Deleting a page or post deletes its pending revisions** with it. Older
   orphans (from before that was added) are skipped in the queue and on the
   dashboard, and their review URL returns 404.
@@ -54,11 +68,13 @@ Editors still edit directly.
 - Slug changes go through the same path, so a live URL never changes until
   approved.
 
-## Limits (the "stage 16b" hardening, not built)
+## Limits
 
 - A revision stores the proposed **values**, not a diff. Approving writes those
-  values over the fields it contains, even if someone with publish rights
-  edited the live record in the meantime. Review soon after submission.
+  values over the fields it contains. The stale-record check (above) is what
+  stops that from silently discarding someone else's edit; it compares
+  `updated_at`, which has one-second resolution, so an edit in the very same
+  second as the submission is not detected.
 - Nothing locks the live record while a revision is pending.
 - Only one pending revision per record, and no comment thread between
   reviewer and Editor beyond the rejection reason.
