@@ -20,7 +20,7 @@ Related: [launch.md](launch.md) (the final gate), [admin-auth.md](admin-auth.md)
 | Composer | 2.x, on the server or run in CI with the result copied over. No Node, npm or build step: the CSS and JS in `public/` are plain committed files. |
 | TLS | A certificate for the domain (Let's Encrypt is fine). |
 | PHP limits | `upload_max_filesize = 12M`, `post_max_size = 14M` (the media library accepts up to 10 MB PDFs and 5 MB images; PHP's defaults would reject them first). `memory_limit = 256M`. |
-| Writable by the PHP user | `storage/` and `bootstrap/cache/` (recursively). |
+| Writable by the PHP user | `storage/` and `bootstrap/cache/` (recursively). The `deploy` user also needs membership of the web server group (e.g. `www-data`) so `config:cache`, `view:cache` and similar commands can overwrite cache files created by the web server on later deploys. |
 
 Optional but recommended: OPcache on (`opcache.enable=1`,
 `opcache.validate_timestamps=0` and reload PHP-FPM on each deploy).
@@ -42,7 +42,8 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
+    http2 on;
     server_name inspaya.example;
 
     ssl_certificate     /etc/letsencrypt/live/inspaya.example/fullchain.pem;
@@ -119,6 +120,7 @@ If a load balancer or CDN terminates TLS in front of nginx instead, listen on
     <Directory /var/www/inspaya/public>
         AllowOverride All
         Require all granted
+        Options +FollowSymLinks
     </Directory>
 
     AddOutputFilterByType DEFLATE text/css application/javascript application/json application/xml image/svg+xml text/plain
@@ -129,15 +131,17 @@ If a load balancer or CDN terminates TLS in front of nginx instead, listen on
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
 
-    # Uploaded media: never execute anything here.
-    <Directory /var/www/inspaya/public/storage>
+    # Uploaded media: never execute anything here. Apply to the real directory
+    # (storage/app/public) that public/storage symlinks to.
+    <Directory /var/www/inspaya/storage/app/public>
         php_flag engine off
         RemoveHandler .php .phtml .php3 .php5 .phar
         ExpiresActive On
         ExpiresDefault "access plus 30 days"
         Header set X-Content-Type-Options "nosniff"
         Header set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox"
-        Options -ExecCGI -Indexes
+        Options -ExecCGI -Indexes +FollowSymLinks
+        Require all granted
     </Directory>
 </VirtualHost>
 ```
@@ -202,6 +206,7 @@ php artisan route:cache
 php artisan view:cache
 php artisan event:cache
 
+sudo usermod -a -G www-data deploy
 sudo chown -R www-data:www-data storage bootstrap/cache
 sudo chmod -R ug+rwX storage bootstrap/cache
 ```
@@ -288,10 +293,36 @@ Notes:
   `php artisan queue:retry all` (see [admin-auth.md](admin-auth.md) "Failed and
   stuck jobs").
 
+### Alternative for hosts without supervisor (cron worker)
+
+On environments that cannot run a persistent daemon (e.g. shared hosting), run
+the worker from cron every minute:
+
+In `/etc/cron.d/inspaya-worker` (or via `crontab -e -u www-data` without `www-data`):
+
+```cron
+* * * * * www-data cd /var/www/inspaya && php artisan queue:work database --stop-when-empty --max-time=55 >> /dev/null 2>&1
+```
+
+What differs from supervisor:
+- **Latency:** Jobs wait up to 60 seconds before processing starts (instead of
+  being picked up within 3 seconds).
+- **No restart on deploy:** `php artisan queue:restart` is not needed because
+  each invocation terminates within 55 seconds or as soon as the queue is
+  empty; the next minute's process automatically runs the new code.
+
 ## 7. Scheduler (cron)
+
+In `/etc/cron.d/inspaya` (system cron file, includes the username):
 
 ```cron
 * * * * * www-data cd /var/www/inspaya && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Or via `crontab -e` (user crontab, run as `www-data` without the username):
+
+```cron
+* * * * * cd /var/www/inspaya && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 It runs, every minute: the scheduled-post announcements (and sitemap
@@ -353,6 +384,13 @@ php artisan queue:restart
 sudo systemctl reload php8.4-fpm                  # resets OPcache
 ```
 
+For non-interactive deploys (CI/CD or automated scripts), grant the `deploy`
+user passwordless reload in `/etc/sudoers.d/inspaya-deploy`:
+```sudoers
+deploy ALL=(ALL) NOPASSWD: /bin/systemctl reload php8.4-fpm
+```
+Otherwise, that final command must be run interactively by a user with `sudo` privileges.
+
 Then smoke-test: `/up`, the home page, the contact form page, the admin login.
 
 **Migrations during a deploy.** Every migration so far is additive (new tables
@@ -401,14 +439,16 @@ two releases, and for one that cannot be avoided use
 
 ## 11. Client content checklist
 
-The site cannot launch until the client supplies these (the CMS holds them;
-nothing needs a developer):
+The site cannot launch until the client supplies these (most are entered in the CMS;
+favicons are files in `public/`):
 
 - [ ] **SMTP** account details and a verified sender address, plus the address
       that should receive new enquiries
 - [ ] **Branding:** logo (and footer logo/image if different), site name as it
-      should appear, a favicon (replace `public/favicon.svg` and
-      `public/favicon.ico`; the shipped one is a neutral placeholder)
+      should appear
+- [ ] **Favicon:** replace `public/favicon.svg` and `public/favicon.ico` (these
+      are two files in `public/`, not a CMS setting; the shipped files are
+      neutral placeholders)
 - [ ] **Real contact details:** public email, phone, office address, social
       links
 - [ ] **Home page** copy and hero text; **About** page copy
