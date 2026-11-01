@@ -5,6 +5,9 @@ on:
     branches: [dev, main]
   pull_request:
     branches: [dev, main]
+  schedule:
+    # Run weekly on Monday at 03:00 UTC to catch newly published advisories
+    - cron: '0 3 * * 1'
 
 env:
   # CI-only: never a real secret, never used outside these ephemeral runs.
@@ -33,6 +36,20 @@ jobs:
       # Check mode only: fails the build on unformatted code, never rewrites it.
       - name: Pint (check only)
         run: vendor/bin/pint --test
+
+  audit:
+    name: Security audit (Composer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Run Composer audit
+        run: composer audit --locked
 
   tests-sqlite:
     name: Tests (SQLite)
