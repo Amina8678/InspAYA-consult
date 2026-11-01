@@ -13,8 +13,8 @@ env:
 jobs:
   # No Node/npm step anywhere in this workflow: no view calls @vite, and the
   # assets actually served (public/css, public/js, public/admin-assets) are
-  # plain committed files, not a Vite build output. package.json/vite.config.js
-  # are unused starter-kit leftovers.
+  # plain committed files, not a Vite build output. Vite and npm scaffolding
+  # (package.json, vite.config.js) were removed as unused starter-kit leftovers.
 
   pint:
     name: Code style (Pint)
