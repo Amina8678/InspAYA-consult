@@ -14,6 +14,7 @@ use App\Support\ContentApproval;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
 /**
@@ -229,6 +230,22 @@ class ContentApprovalTest extends TestCase
         }
 
         $this->assertSame(PendingRevisionStatus::Pending, $revision->fresh()->status);
+    }
+
+    public function test_user_without_publish_permission_is_refused_at_the_policy_level(): void
+    {
+        $revision = PendingRevision::factory()->create();
+
+        $editor = User::factory()->withRole('editor')->create();
+        $author = User::factory()->withRole('author')->create();
+        $admin = User::factory()->withRole('administrator')->create();
+
+        $this->assertFalse(Gate::forUser($editor)->allows('reject', $revision));
+        $this->assertFalse(Gate::forUser($editor)->allows('approve', $revision));
+        $this->assertFalse(Gate::forUser($author)->allows('reject', $revision));
+        $this->assertFalse(Gate::forUser($author)->allows('approve', $revision));
+        $this->assertTrue(Gate::forUser($admin)->allows('reject', $revision));
+        $this->assertTrue(Gate::forUser($admin)->allows('approve', $revision));
     }
 
     // Rejecting ----------------------------------------------------------------

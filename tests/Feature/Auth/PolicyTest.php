@@ -7,6 +7,7 @@ use App\Models\BlogPost;
 use App\Models\ContactSubmissionNote;
 use App\Models\Media;
 use App\Models\Page;
+use App\Models\PendingRevision;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\SiteSetting;
@@ -167,5 +168,20 @@ class PolicyTest extends TestCase
         // An editor lacks enquiries.delete, but may still delete their own note.
         $this->assertTrue($this->can($editor, 'delete', $own));
         $this->assertFalse($this->can($editor, 'delete', $other));
+    }
+
+    public function test_pending_revisions_can_only_be_approved_or_rejected_by_publishers(): void
+    {
+        $revision = PendingRevision::factory()->create();
+        $admin = $this->as('administrator');
+        $editor = $this->as('editor');
+        $author = $this->as('author');
+
+        $this->assertTrue($this->can($admin, 'approve', $revision));
+        $this->assertTrue($this->can($admin, 'reject', $revision));
+        $this->assertFalse($this->can($editor, 'approve', $revision));
+        $this->assertFalse($this->can($editor, 'reject', $revision));
+        $this->assertFalse($this->can($author, 'approve', $revision));
+        $this->assertFalse($this->can($author, 'reject', $revision));
     }
 }

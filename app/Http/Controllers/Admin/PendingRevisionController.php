@@ -94,6 +94,7 @@ class PendingRevisionController extends Controller
 
     public function reject(RejectRevisionRequest $request, PendingRevision $pendingRevision): RedirectResponse
     {
+        $this->authorize('reject', $pendingRevision);
         $this->abortIfRecordDeleted($pendingRevision);
         $title = $pendingRevision->revisable->title;
         $this->approval->reject($pendingRevision, $request->user(), $request->validated('reason'));
