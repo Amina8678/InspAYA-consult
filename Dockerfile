@@ -71,5 +71,5 @@ ENV PORT=10000 \
 
 EXPOSE 10000
 
+# No CMD: the role is the first argument, else APP_ROLE, else web.
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["web"]
