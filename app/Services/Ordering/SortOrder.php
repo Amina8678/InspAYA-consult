@@ -22,7 +22,10 @@ class SortOrder
     public function append(Model $model): void
     {
         DB::transaction(function () use ($model) {
-            $max = $model->newQuery()->lockForUpdate()->max('sort_order');
+            $max = $model->newQuery()
+                ->orderByDesc('sort_order')
+                ->lockForUpdate()
+                ->value('sort_order');
             $model->sort_order = ((int) $max) + 1;
             $model->save();
         });

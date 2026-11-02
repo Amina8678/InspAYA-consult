@@ -95,9 +95,12 @@ class ConstraintTest extends TestCase
         User::factory()->withRole($role)->create();
 
         try {
+            DB::beginTransaction();
             $role->delete();
+            DB::commit();
             $this->fail('Deleting a role held by a user should be restricted.');
         } catch (QueryException) {
+            DB::rollBack();
             $this->assertModelExists($role);
         }
     }
@@ -119,9 +122,12 @@ class ConstraintTest extends TestCase
         $author = $post->author;
 
         try {
+            DB::beginTransaction();
             $author->delete();
+            DB::commit();
             $this->fail('Deleting a user who authored posts should be restricted.');
         } catch (QueryException) {
+            DB::rollBack();
             $this->assertModelExists($author);
             $this->assertModelExists($post);
         }
