@@ -7,6 +7,7 @@ change those to suit.
 
 Related: [launch.md](launch.md) (the final gate), [admin-auth.md](admin-auth.md)
 (proxies, HSTS, queue, throttling), [admin-media.md](admin-media.md) (uploads).
+Hosting on Render with Docker instead of a VPS: [render.md](render.md).
 
 ## 1. Server requirements
 
