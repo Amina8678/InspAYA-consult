@@ -30,8 +30,8 @@ class PendingRevisionConcurrencyTest extends TestCase
     {
         parent::setUp();
 
-        if (DB::getDriverName() !== 'mysql') {
-            $this->markTestSkipped('Row locking is MySQL-specific; this test needs two real MySQL connections.');
+        if (! in_array(DB::getDriverName(), ['mysql', 'pgsql'], true)) {
+            $this->markTestSkipped('Row locking is MySQL- and PostgreSQL-specific; this test needs two real database connections.');
         }
 
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -39,11 +39,13 @@ class PendingRevisionConcurrencyTest extends TestCase
 
     private function submitInBackground(Page $page, User $user, string $title): Process
     {
-        $c = config('database.connections.mysql');
+        $connection = config('database.default');
+        $c = config("database.connections.{$connection}");
         $env = [
-            'APP_ENV' => 'testing', 'DB_CONNECTION' => 'mysql', 'DB_URL' => '',
-            'DB_HOST' => (string) $c['host'], 'DB_PORT' => (string) $c['port'], 'DB_DATABASE' => (string) $c['database'],
-            'DB_USERNAME' => (string) $c['username'], 'DB_PASSWORD' => (string) $c['password'],
+            'APP_ENV' => 'testing', 'DB_CONNECTION' => $connection, 'DB_URL' => (string) ($c['url'] ?? ''),
+            'DB_HOST' => (string) ($c['host'] ?? ''), 'DB_PORT' => (string) ($c['port'] ?? ''), 'DB_DATABASE' => (string) ($c['database'] ?? ''),
+            'DB_USERNAME' => (string) ($c['username'] ?? ''), 'DB_PASSWORD' => (string) ($c['password'] ?? ''),
+            'DB_SSLMODE' => (string) ($c['sslmode'] ?? ''),
             'CACHE_STORE' => 'array', 'SESSION_DRIVER' => 'array', 'QUEUE_CONNECTION' => 'sync',
         ];
 
@@ -57,8 +59,17 @@ class PendingRevisionConcurrencyTest extends TestCase
     /** A second connection that locks the live page row, as a competing request would. */
     private function holdPageLock(Page $page): \PDO
     {
-        $c = config('database.connections.mysql');
-        $pdo = new \PDO("mysql:host={$c['host']};port={$c['port']};dbname={$c['database']}", $c['username'], $c['password'], [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
+        $connection = config('database.default');
+        $c = config("database.connections.{$connection}");
+        $driver = $c['driver'] ?? $connection;
+
+        $dsn = match ($driver) {
+            'mysql' => "mysql:host={$c['host']};port={$c['port']};dbname={$c['database']}",
+            'pgsql' => "pgsql:host={$c['host']};port={$c['port']};dbname={$c['database']}".(! empty($c['sslmode']) ? ";sslmode={$c['sslmode']}" : ''),
+            default => throw new \RuntimeException("Unsupported driver [{$driver}] for raw lock connection"),
+        };
+
+        $pdo = new \PDO($dsn, $c['username'] ?? null, $c['password'] ?? null, [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
         $pdo->beginTransaction();
         $pdo->query('select id from pages where id = '.(int) $page->id.' for update');
 

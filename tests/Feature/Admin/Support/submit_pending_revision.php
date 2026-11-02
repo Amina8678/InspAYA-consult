@@ -21,8 +21,16 @@ $app = require $base.'/bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
 
 // Never touch anything but a scratch database.
-if (! str_ends_with((string) config('database.connections.mysql.database'), '_testing') || config('database.default') !== 'mysql') {
-    fwrite(STDERR, "refusing to run outside a *_testing MySQL database\n");
+$conn = (string) config('database.default');
+$db = (string) config("database.connections.{$conn}.database");
+$url = (string) config("database.connections.{$conn}.url");
+if (! empty($url)) {
+    $parsedPath = parse_url($url, PHP_URL_PATH);
+    $db = is_string($parsedPath) ? ltrim($parsedPath, '/') : '';
+}
+
+if (! str_ends_with($db, '_testing') || ! in_array($conn, ['mysql', 'pgsql'], true)) {
+    fwrite(STDERR, "refusing to run outside a *_testing MySQL or PostgreSQL database\n");
     exit(2);
 }
 

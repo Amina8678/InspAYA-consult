@@ -330,8 +330,8 @@ class ContentApprovalTest extends TestCase
 
     public function test_two_submissions_to_the_same_record_lock_the_row_they_read(): void
     {
-        if (DB::getDriverName() !== 'mysql') {
-            $this->markTestSkipped('Row locks (FOR UPDATE) are only emitted on MySQL; SQLite serialises writes itself.');
+        if (! in_array(DB::getDriverName(), ['mysql', 'pgsql'], true)) {
+            $this->markTestSkipped('Row locks (FOR UPDATE) are only emitted on MySQL and PostgreSQL; SQLite serialises writes itself.');
         }
 
         $about = Page::factory()->published()->create(['slug' => 'about', 'title' => 'About us']);
