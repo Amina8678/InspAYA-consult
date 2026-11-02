@@ -44,9 +44,12 @@ class LaunchCheck extends Command
         $this->checkEnvironment();
         $this->checkMail();
         $this->checkProxies();
+        $dbExtensionOk = $this->checkDatabase();
 
-        if (! Schema::hasTable('site_settings')) {
-            $this->failures[] = 'The database has not been migrated (no site_settings table).';
+        if (! $dbExtensionOk || ! Schema::hasTable('site_settings')) {
+            if ($dbExtensionOk) {
+                $this->failures[] = 'The database has not been migrated (no site_settings table).';
+            }
         } else {
             $this->checkSettings();
             $this->checkLegalPages();
@@ -107,6 +110,28 @@ class LaunchCheck extends Command
             $this->failures[] = 'TRUSTED_PROXIES is empty. Behind a TLS-terminating proxy this causes a redirect loop; '
                 .'set it (docs/admin-auth.md "Trusted proxies"), or pass --direct-tls if the app serves HTTPS itself.';
         }
+    }
+
+    private function checkDatabase(): bool
+    {
+        $connection = (string) config('database.default');
+        $driver = (string) config("database.connections.{$connection}.driver", $connection);
+
+        $extension = match ($driver) {
+            'mysql', 'mariadb' => 'pdo_mysql',
+            'pgsql' => 'pdo_pgsql',
+            'sqlite' => 'pdo_sqlite',
+            'sqlsrv' => 'pdo_sqlsrv',
+            default => "pdo_{$driver}",
+        };
+
+        if (! extension_loaded($extension)) {
+            $this->failures[] = "The PHP extension \"{$extension}\" required for database connection \"{$connection}\" is not loaded.";
+
+            return false;
+        }
+
+        return true;
     }
 
     private function checkSettings(): void

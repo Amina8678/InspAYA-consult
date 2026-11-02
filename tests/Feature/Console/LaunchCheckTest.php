@@ -97,6 +97,24 @@ class LaunchCheckTest extends TestCase
         }
     }
 
+    public function test_it_fails_when_pdo_extension_for_configured_connection_is_not_loaded(): void
+    {
+        $original = config('database.default');
+        try {
+            config([
+                'database.default' => 'custom',
+                'database.connections.custom' => [
+                    'driver' => 'nonexistent_driver',
+                    'database' => ':memory:',
+                ],
+            ]);
+
+            $this->assertFails('The PHP extension "pdo_nonexistent_driver" required for database connection "custom" is not loaded.');
+        } finally {
+            config(['database.default' => $original]);
+        }
+    }
+
     public function test_it_fails_with_a_placeholder_sender_address(): void
     {
         config(['mail.from.address' => 'hello@example.com']);
