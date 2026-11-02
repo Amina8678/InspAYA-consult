@@ -131,6 +131,39 @@ class SecurityHeadersTest extends TestCase
         app()->detectEnvironment(fn () => 'testing');
     }
 
+    public function test_the_health_probe_is_not_redirected_over_plain_http_in_production(): void
+    {
+        app()->detectEnvironment(fn () => 'production');
+
+        $response = $this->get('http://localhost/up')->assertOk()->assertJson(['status' => 'ok']);
+        $this->assertNull($response->headers->get('Strict-Transport-Security'));
+        $this->assertSecurityHeaders($response);
+
+        app()->detectEnvironment(fn () => 'testing');
+    }
+
+    public function test_only_the_exact_health_path_is_exempt_from_the_redirect(): void
+    {
+        app()->detectEnvironment(fn () => 'production');
+
+        $this->get('http://localhost/up/anything')->assertRedirect('https://localhost/up/anything');
+        $this->get('http://localhost/upload')->assertRedirect('https://localhost/upload');
+        $this->post('http://localhost/up')->assertRedirect('https://localhost/up');
+
+        app()->detectEnvironment(fn () => 'testing');
+    }
+
+    public function test_hsts_is_still_sent_on_a_secure_health_probe(): void
+    {
+        app()->detectEnvironment(fn () => 'production');
+
+        $this->get('https://localhost/up', ['X-Forwarded-Proto' => 'https'])
+            ->assertOk()
+            ->assertHeader('Strict-Transport-Security');
+
+        app()->detectEnvironment(fn () => 'testing');
+    }
+
     // Trusted proxies -----------------------------------------------------
 
     protected function tearDown(): void

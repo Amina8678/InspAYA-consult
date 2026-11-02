@@ -56,6 +56,22 @@ class TrustedProxiesEnvFileTest extends TestCase
         $this->assertStringStartsWith('https://', $response['location']);
     }
 
+    public function test_a_wildcard_behind_a_platform_proxy_causes_no_redirect_loop(): void
+    {
+        // Render's router connects from changing internal addresses, so no
+        // fixed IP can be listed; "*" makes the forwarded scheme count from
+        // any of them. Render terminates TLS and sets X-Forwarded-Proto.
+        $this->writeEnv('TRUSTED_PROXIES=*');
+
+        foreach (['10.16.3.7', '172.20.1.9', '100.64.2.2'] as $address) {
+            $response = $this->request(remoteAddr: $address);
+
+            $this->assertSame(200, $response['status'], $address);
+            $this->assertNull($response['location'], $address);
+            $this->assertNotNull($response['hsts'], $address);
+        }
+    }
+
     public function test_a_blank_value_trusts_nobody(): void
     {
         $this->writeEnv('TRUSTED_PROXIES=');

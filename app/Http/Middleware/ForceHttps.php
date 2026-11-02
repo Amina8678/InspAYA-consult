@@ -13,15 +13,24 @@ use Symfony\Component\HttpFoundation\Response;
  * only reflects the real scheme once that proxy is trusted (see
  * config/trustedproxy or `Request::setTrustedProxies` and
  * docs/admin-auth.md); this middleware alone does not configure that.
+ *
+ * `/up` is exempt: a platform health check (Render) probes it over plain
+ * HTTP from inside the network and a 301 would count as unhealthy. It only
+ * returns ok/unavailable. HSTS is still sent only on secure requests.
  */
 class ForceHttps
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (app()->environment('production') && ! $request->secure()) {
+        if (app()->environment('production') && ! $request->secure() && ! $this->isHealthProbe($request)) {
             return redirect()->secure($request->getRequestUri(), 301);
         }
 
         return $next($request);
+    }
+
+    private function isHealthProbe(Request $request): bool
+    {
+        return $request->isMethod('GET') && $request->path() === 'up';
     }
 }
