@@ -78,8 +78,9 @@ jobs:
       # No --fail-on-skipped here (unlike the MySQL job): four MySQL-only
       # locking tests (one each in SortOrderTest and ContentApprovalTest, and
       # both in PendingRevisionConcurrencyTest) permanently and legitimately
-      # skip on SQLite (FOR UPDATE is a MySQL-only concept), so this job
-      # always has exactly four intentional skips. Those tests still run for
+      # skip on SQLite (FOR UPDATE is a MySQL-only concept), and so does the
+      # killed-connection test in ConnectionRecoveryTest (SQLite has no
+      # server process), so this job always has exactly five intentional skips. Those tests still run for
       # real on the MySQL job below, where the flag stays on to catch any
       # other, genuinely accidental skip.
       - name: Run test suite (SQLite)
