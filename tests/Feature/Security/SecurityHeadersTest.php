@@ -138,6 +138,7 @@ class SecurityHeadersTest extends TestCase
         $response = $this->get('http://localhost/up')->assertOk()->assertJson(['status' => 'ok']);
         $this->assertNull($response->headers->get('Strict-Transport-Security'));
         $this->assertSecurityHeaders($response);
+        $this->call('HEAD', 'http://localhost/up')->assertOk();
 
         app()->detectEnvironment(fn () => 'testing');
     }

@@ -31,6 +31,6 @@ class ForceHttps
 
     private function isHealthProbe(Request $request): bool
     {
-        return $request->isMethod('GET') && $request->path() === 'up';
+        return in_array($request->method(), ['GET', 'HEAD'], true) && $request->path() === 'up';
     }
 }
