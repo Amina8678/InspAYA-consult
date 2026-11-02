@@ -33,18 +33,19 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         nginx supervisor gettext-base openssl \
-        postgresql-client-${PG_MAJOR} libpq-dev; \
-    docker-php-ext-install -j"$(nproc)" pdo_pgsql pcntl opcache; \
-    # Keep the runtime library, drop the headers and toolchain leftovers.
-    apt-mark manual libpq5; \
-    apt-get purge -y --auto-remove libpq-dev gnupg; \
+        postgresql-client-${PG_MAJOR} libpq-dev libicu-dev; \
+    docker-php-ext-install -j"$(nproc)" pdo_pgsql pcntl opcache intl; \
+    # Keep the runtime libraries, drop the headers and toolchain leftovers.
+    apt-mark manual libpq5 libicu72; \
+    apt-get purge -y --auto-remove libpq-dev libicu-dev gnupg; \
     rm -rf /var/lib/apt/lists/* /etc/nginx/sites-enabled /etc/nginx/conf.d/default.conf
 
 # Fail the build if an extension the app needs is missing. fileinfo and
-# mbstring ship with the base image; GD, intl, zip, bcmath and imagick are
-# not used by the app (see docs/render.md). The `pgsql` extension is not
+# mbstring ship with the base image; GD, zip, bcmath and imagick are not used
+# by the app (see docs/render.md). intl is: the admin media views call
+# Number::fileSize(). The `pgsql` extension is not
 # needed either: Laravel talks to PostgreSQL through PDO only.
-RUN php -r 'foreach (["pdo_pgsql","pcntl","fileinfo","mbstring","openssl","ctype","dom","xml","tokenizer","curl","Zend OPcache"] as $e) { if (!extension_loaded($e)) { fwrite(STDERR, "missing extension $e\n"); exit(1); } }'
+RUN php -r 'foreach (["pdo_pgsql","pcntl","fileinfo","mbstring","openssl","ctype","dom","xml","tokenizer","curl","intl","Zend OPcache"] as $e) { if (!extension_loaded($e)) { fwrite(STDERR, "missing extension $e\n"); exit(1); } }'
 
 COPY docker/php/app.ini /usr/local/etc/php/conf.d/zz-app.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/zz-www.conf

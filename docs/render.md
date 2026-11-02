@@ -33,9 +33,10 @@ Chosen from `composer.json` and a search of the code:
 | `fileinfo` | yes (base image) | Declared in `composer.json`; uploads are sniffed with it |
 | `mbstring`, `openssl`, `ctype`, `dom`, `xml`, `tokenizer`, `curl` | yes (base image) | Laravel |
 | `pcntl` | yes (built) | `queue:work --timeout` needs it to kill a stuck job |
+| `intl` | yes (built) | The admin media views call `Number::fileSize()`, which needs it (a missing `intl` shows as a 500 on `/admin/media`) |
 | `opcache` | yes (built) | Production speed; `validate_timestamps=0` because the image is immutable |
 | GD / imagick | **no** | Nothing resizes or re-encodes images. `FileInspector` only calls `getimagesize()`, which is PHP core |
-| `intl`, `zip`, `bcmath` | **no** | Nothing in `app/` or `config/` uses them. (`zip` is only used by Composer in the build stage) |
+| `zip`, `bcmath` | **no** | Nothing in `app/`, `config/` or `resources/` uses them. (`zip` is only used by Composer in the build stage) |
 
 The build fails if a required extension is missing.
 
