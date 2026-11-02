@@ -60,7 +60,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, dom, fileinfo, pdo_mysql, pdo_sqlite, sqlite3, gd, zip, intl, bcmath
+          extensions: mbstring, dom, fileinfo, pdo_sqlite, sqlite3, gd, zip, intl, bcmath
           coverage: none
 
       - name: Install Composer dependencies
@@ -153,4 +153,60 @@ jobs:
         run: php artisan migrate:fresh --force
 
       - name: Run test suite (MySQL)
+        run: composer test -- --fail-on-skipped
+
+  tests-postgres:
+    name: Tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: inspaya_testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: inspaya_testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: password
+      SUPER_ADMIN_NAME: CI Super Admin
+      SUPER_ADMIN_USERNAME: ci-super-admin
+      SUPER_ADMIN_EMAIL: ci-super-admin@example.test
+      SUPER_ADMIN_PASSWORD: ci-only-password-not-real-1234
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, dom, fileinfo, pdo_pgsql, pgsql, gd, zip, intl, bcmath
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Create empty .env
+        run: touch .env
+
+      - name: Run migrations against PostgreSQL
+        run: php artisan migrate --force
+
+      - name: Run seeders against PostgreSQL
+        run: php artisan db:seed --force
+
+      - name: Reset the database for the test suite
+        run: php artisan migrate:fresh --force
+
+      - name: Run test suite (PostgreSQL)
         run: composer test -- --fail-on-skipped

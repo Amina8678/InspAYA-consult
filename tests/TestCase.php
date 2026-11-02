@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use RuntimeException;
 
@@ -16,20 +17,33 @@ abstract class TestCase extends BaseTestCase
     {
         $app = parent::createApplication();
 
-        $connection = $app['config']->get('database.default');
-        $config = $app['config']->get("database.connections.{$connection}", []);
+        static::guardAgainstNonTestingDatabase($app['config']);
+
+        return $app;
+    }
+
+    /**
+     * @param  Repository  $configRepository
+     */
+    public static function guardAgainstNonTestingDatabase($configRepository): void
+    {
+        $connection = $configRepository->get('database.default');
+        $config = $configRepository->get("database.connections.{$connection}", []);
 
         if (($config['driver'] ?? null) !== 'sqlite') {
             $database = (string) ($config['database'] ?? '');
 
-            if (! empty($config['url']) || ! str_ends_with($database, '_testing')) {
+            if (! empty($config['url'])) {
+                $parsedPath = parse_url((string) $config['url'], PHP_URL_PATH);
+                $database = is_string($parsedPath) ? ltrim($parsedPath, '/') : '';
+            }
+
+            if (! str_ends_with($database, '_testing')) {
                 throw new RuntimeException(
                     "Refusing to run tests against [{$connection}] database [{$database}]: "
-                    .'use SQLite or a database whose name ends in "_testing", with DB_URL empty.'
+                    .'use SQLite or a database whose name ends in "_testing".'
                 );
             }
         }
-
-        return $app;
     }
 }
