@@ -8,6 +8,7 @@ use App\Models\CoreValue;
 use App\Services\Ordering\SortOrder;
 use App\Support\AuditLogger;
 use App\Support\MediaPicker;
+use App\Support\Search;
 use App\Support\Slug;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -38,7 +39,7 @@ class CoreValueController extends Controller
 
         $values = CoreValue::query()
             ->with('icon')
-            ->when($search !== '', fn ($q) => $q->where('title', 'like', '%'.addcslashes($search, '%_\\').'%'))
+            ->when($search !== '', fn ($q) => $q->where('title', Search::likeOperator(), Search::containsPattern($search)))
             ->ordered()
             ->paginate(self::PER_PAGE)
             ->withQueryString();

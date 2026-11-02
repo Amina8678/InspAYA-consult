@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\Category;
 use App\Support\AuditLogger;
+use App\Support\Search;
 use App\Support\Slug;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +34,7 @@ class CategoryController extends Controller
 
         $categories = Category::query()
             ->withCount('blogPosts')
-            ->when($search !== '', fn ($q) => $q->where('name', 'like', '%'.addcslashes($search, '%_\\').'%'))
+            ->when($search !== '', fn ($q) => $q->where('name', Search::likeOperator(), Search::containsPattern($search)))
             ->orderBy('name')
             ->paginate(self::PER_PAGE)
             ->withQueryString();

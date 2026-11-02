@@ -6,6 +6,7 @@ use App\Models\CoreValue;
 use App\Models\Page;
 use App\Models\Service;
 use App\Models\SiteSetting;
+use App\Support\Search;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -172,27 +173,28 @@ class LaunchCheck extends Command
      */
     private function checkPublicContent(): void
     {
-        $like = '%'.self::PLACEHOLDER.'%';
+        $like = Search::containsPattern(self::PLACEHOLDER);
+        $op = Search::likeOperator();
 
         $services = Service::query()->where('is_active', true)->where(fn ($q) => $q
-            ->where('title', 'like', $like)->orWhere('short_description', 'like', $like)
-            ->orWhere('description', 'like', $like)->orWhere('meta_description', 'like', $like)
-            ->orWhere('capabilities', 'like', $like)->orWhere('outcomes', 'like', $like))
+            ->where('title', $op, $like)->orWhere('short_description', $op, $like)
+            ->orWhere('description', $op, $like)->orWhere('meta_description', $op, $like)
+            ->orWhere('capabilities', $op, $like)->orWhere('outcomes', $op, $like))
             ->pluck('title');
         foreach ($services as $title) {
             $this->failures[] = 'Active service "'.$title.'" still contains placeholder text.';
         }
 
         $values = CoreValue::query()->where('is_active', true)
-            ->where(fn ($q) => $q->where('title', 'like', $like)->orWhere('description', 'like', $like))
+            ->where(fn ($q) => $q->where('title', $op, $like)->orWhere('description', $op, $like))
             ->pluck('title');
         foreach ($values as $title) {
             $this->failures[] = 'Active core value "'.$title.'" still contains placeholder text.';
         }
 
         $pages = Page::query()->published()->where(fn ($q) => $q
-            ->where('title', 'like', $like)->orWhere('structured_content', 'like', $like)
-            ->orWhere('meta_description', 'like', $like))
+            ->where('title', $op, $like)->orWhere('structured_content', $op, $like)
+            ->orWhere('meta_description', $op, $like))
             ->pluck('title');
         foreach ($pages as $title) {
             $this->failures[] = 'Published page "'.$title.'" still contains placeholder text.';

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\AuditLogger;
 use App\Support\ContentApproval;
 use App\Support\MediaPicker;
+use App\Support\Search;
 use App\Support\Slug;
 use App\Support\StaleEdit;
 use Illuminate\Contracts\View\View;
@@ -44,12 +45,13 @@ class BlogPostController extends Controller
         $user = $request->user();
 
         $search = trim((string) $request->query('q'));
-        $like = '%'.addcslashes($search, '%_\\').'%';
+        $like = Search::containsPattern($search);
+        $op = Search::likeOperator();
 
         $posts = BlogPost::query()
             ->with(['author:id,name', 'category'])
             ->when(! $user->can('posts.edit-any'), fn ($q) => $q->where('author_id', $user->id))
-            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('title', 'like', $like)->orWhere('slug', 'like', $like)))
+            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('title', $op, $like)->orWhere('slug', $op, $like)))
             ->latest('updated_at')
             ->latest('id')
             ->paginate(self::PER_PAGE)

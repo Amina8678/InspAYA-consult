@@ -8,6 +8,7 @@ use App\Models\Testimonial;
 use App\Services\Ordering\SortOrder;
 use App\Support\AuditLogger;
 use App\Support\MediaPicker;
+use App\Support\Search;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,7 +38,7 @@ class TestimonialController extends Controller
 
         $testimonials = Testimonial::query()
             ->with('photo')
-            ->when($search !== '', fn ($q) => $q->where('author_name', 'like', '%'.addcslashes($search, '%_\\').'%'))
+            ->when($search !== '', fn ($q) => $q->where('author_name', Search::likeOperator(), Search::containsPattern($search)))
             ->ordered()
             ->paginate(self::PER_PAGE)
             ->withQueryString();

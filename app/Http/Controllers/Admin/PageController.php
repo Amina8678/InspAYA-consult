@@ -11,6 +11,7 @@ use App\Support\ContentApproval;
 use App\Support\CorePages;
 use App\Support\MediaPicker;
 use App\Support\PageSections;
+use App\Support\Search;
 use App\Support\Slug;
 use App\Support\StaleEdit;
 use Illuminate\Contracts\View\View;
@@ -39,10 +40,11 @@ class PageController extends Controller
         $this->authorize('viewAny', Page::class);
 
         $search = trim((string) $request->query('q'));
-        $like = '%'.addcslashes($search, '%_\\').'%';
+        $like = Search::containsPattern($search);
+        $op = Search::likeOperator();
 
         $pages = Page::query()
-            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('title', 'like', $like)->orWhere('slug', 'like', $like)))
+            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('title', $op, $like)->orWhere('slug', $op, $like)))
             ->orderBy('title')
             ->orderBy('id')
             ->paginate(self::PER_PAGE, ['id', 'title', 'slug', 'status', 'published_at', 'updated_at'])

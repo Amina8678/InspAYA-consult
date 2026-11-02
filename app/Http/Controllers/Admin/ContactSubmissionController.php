@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\ContactSubmissionRequest;
 use App\Models\ContactSubmission;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\Search;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -234,13 +235,14 @@ class ContactSubmissionController extends Controller
      */
     private function filteredQuery(string $search, ?string $statusFilter): Builder
     {
-        $like = '%'.addcslashes($search, '%_\\').'%';
+        $like = Search::containsPattern($search);
+        $op = Search::likeOperator();
 
         return ContactSubmission::query()
             ->when($statusFilter !== null, fn ($q) => $q->where('status', $statusFilter))
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
-                ->where('name', 'like', $like)
-                ->orWhere('email', 'like', $like)
-                ->orWhere('organization', 'like', $like)));
+                ->where('name', $op, $like)
+                ->orWhere('email', $op, $like)
+                ->orWhere('organization', $op, $like)));
     }
 }

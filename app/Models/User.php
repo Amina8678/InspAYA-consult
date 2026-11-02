@@ -7,6 +7,7 @@ use App\Enums\UserStatus;
 use App\Models\Concerns\HasAuditTrail;
 use App\Notifications\AdminResetPassword;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -60,6 +61,30 @@ class User extends Authenticatable
             'two_factor_recovery_codes' => 'encrypted',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Stored lowercase for cross-engine unique checks and lookups.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value !== null ? strtolower(trim($value)) : null,
+        );
+    }
+
+    /**
+     * Stored lowercase for cross-engine unique checks and lookups.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function username(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value !== null ? strtolower(trim($value)) : null,
+        );
     }
 
     /**

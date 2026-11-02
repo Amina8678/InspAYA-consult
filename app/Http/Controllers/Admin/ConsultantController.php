@@ -11,6 +11,7 @@ use App\Services\Assignments\ServiceConsultantAssignments;
 use App\Services\Ordering\SortOrder;
 use App\Support\AuditLogger;
 use App\Support\MediaPicker;
+use App\Support\Search;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,12 +44,13 @@ class ConsultantController extends Controller
         $this->authorize('viewAny', Consultant::class);
 
         $search = trim((string) $request->query('q'));
-        $like = '%'.addcslashes($search, '%_\\').'%';
+        $like = Search::containsPattern($search);
+        $op = Search::likeOperator();
 
         $consultants = Consultant::query()
             ->with('photo')
             ->withCount('services')
-            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', $like)->orWhere('title', 'like', $like)))
+            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('name', $op, $like)->orWhere('title', $op, $like)))
             ->ordered()
             ->paginate(self::PER_PAGE)
             ->withQueryString();

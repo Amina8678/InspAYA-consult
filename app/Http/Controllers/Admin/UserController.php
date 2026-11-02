@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UserRequest;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\Search;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,14 +37,15 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         $search = trim((string) $request->query('q'));
-        $like = '%'.addcslashes($search, '%_\\').'%';
+        $like = Search::containsPattern($search);
+        $op = Search::likeOperator();
 
         $users = User::query()
             ->with('role:id,name')
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
-                ->where('name', 'like', $like)
-                ->orWhere('email', 'like', $like)
-                ->orWhere('username', 'like', $like)))
+                ->where('name', $op, $like)
+                ->orWhere('email', $op, $like)
+                ->orWhere('username', $op, $like)))
             ->orderBy('name')
             ->paginate(self::PER_PAGE, ['id', 'name', 'email', 'username', 'role_id', 'status', 'last_login_at'])
             ->withQueryString();

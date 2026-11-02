@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\FaqRequest;
 use App\Models\Faq;
 use App\Services\Ordering\SortOrder;
 use App\Support\AuditLogger;
+use App\Support\Search;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class FaqController extends Controller
         $search = trim((string) $request->query('q'));
 
         $faqs = Faq::query()
-            ->when($search !== '', fn ($q) => $q->where('question', 'like', '%'.addcslashes($search, '%_\\').'%'))
+            ->when($search !== '', fn ($q) => $q->where('question', Search::likeOperator(), Search::containsPattern($search)))
             ->ordered()
             ->paginate(self::PER_PAGE)
             ->withQueryString();

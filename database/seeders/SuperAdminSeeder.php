@@ -81,6 +81,9 @@ class SuperAdminSeeder extends Seeder
             );
         }
 
+        $config['email'] = strtolower(trim((string) $config['email']));
+        $config['username'] = strtolower(trim((string) $config['username']));
+
         return $config;
     }
 }

@@ -29,6 +29,20 @@ class UserRequest extends FormRequest
             : $this->user()->can('create', User::class);
     }
 
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+        if ($this->has('email')) {
+            $merge['email'] = strtolower(trim((string) $this->input('email')));
+        }
+        if ($this->has('username')) {
+            $merge['username'] = strtolower(trim((string) $this->input('username')));
+        }
+        if ($merge !== []) {
+            $this->merge($merge);
+        }
+    }
+
     /**
      * @return array<string, list<mixed>>
      */
