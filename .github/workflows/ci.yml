@@ -227,7 +227,7 @@ jobs:
         run: |
           docker run -d --name web -p 10000:10000 \
             -e APP_ENV=production -e APP_DEBUG=false -e APP_KEY="$APP_KEY" \
-            -e DB_CONNECTION=sqlite -e DB_DATABASE=/tmp/ci.sqlite \
+            -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: \
             -e SESSION_DRIVER=array -e CACHE_STORE=array -e LOG_CHANNEL=stderr \
             inspaya:ci
           for i in $(seq 1 30); do
