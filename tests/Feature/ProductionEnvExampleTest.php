@@ -21,7 +21,7 @@ class ProductionEnvExampleTest extends TestCase
         $this->assertSame('false', $env['APP_DEBUG']);
         $this->assertSame('daily', $env['LOG_CHANNEL']);
         $this->assertSame('warning', $env['LOG_LEVEL']);
-        $this->assertSame('mysql', $env['DB_CONNECTION']);
+        $this->assertSame('pgsql', $env['DB_CONNECTION']);
         $this->assertSame('smtp', $env['MAIL_MAILER']);
         $this->assertSame('database', $env['QUEUE_CONNECTION']);
         $this->assertSame('true', $env['SESSION_SECURE_COOKIE']);

@@ -12,8 +12,8 @@ Related: [launch.md](launch.md) (the final gate), [admin-auth.md](admin-auth.md)
 
 | Need | Detail |
 |---|---|
-| PHP | **8.4 or newer**, with `pdo_mysql`, `mbstring`, `openssl`, `fileinfo` (uploads are sniffed with it), `dom`, `xml`, `ctype`, `json`, `tokenizer`, `curl`. `gd` is not required. Run `composer check-platform-reqs --no-dev` to confirm. |
-| Database | **MySQL 8.0+** (or MariaDB 10.6+), `utf8mb4`. A dedicated database and user with full rights on it only. |
+| PHP | **8.4 or newer**, with the PDO driver for your database (`pdo_pgsql` for PostgreSQL/Neon, `pdo_mysql` for MySQL), `mbstring`, `openssl`, `fileinfo` (uploads are sniffed with it), `dom`, `xml`, `ctype`, `json`, `tokenizer`, `curl`. `gd` is not required. Run `composer check-platform-reqs --no-dev` to confirm. |
+| Database | **PostgreSQL 16+** (production target, e.g. Neon serverless Postgres) or **MySQL 8.0+** (or MariaDB 10.6+), UTF-8. A dedicated database and user with full rights on it only. |
 | Web server | nginx + PHP-FPM or Apache + PHP-FPM. Document root is `public/`, never the project root. |
 | Process manager | `supervisor` (or systemd) for the queue worker. |
 | Cron | One line for the scheduler. |
@@ -172,7 +172,7 @@ invalidates anything encrypted with it.
 | `APP_KEY` | yes | `php artisan key:generate --force`, once. |
 | `APP_URL` | yes | Public HTTPS URL, no trailing slash. Used for reset links, the sitemap and media URLs; the CSP only allows images from the same host. |
 | `TRUSTED_PROXIES` | yes behind a proxy | IP or CIDR list of the proxy that terminates TLS (for example `10.0.0.5`). Blank means "trust nobody": correct only when this server terminates TLS itself (then run `launch:check --direct-tls`). Wrong or blank behind a proxy causes a **redirect loop**. `*` trusts whoever connects, so use it only if the app cannot be reached except through the proxy. It is read from `.env` through `config/trustedproxy.php`, so it works with `config:cache`. |
-| `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | yes | MySQL. |
+| `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_SSLMODE` | yes | PostgreSQL (Neon) or MySQL. For Neon: `DB_CONNECTION=pgsql`, `DB_PORT=5432`, `DB_SSLMODE=require`. |
 | `MAIL_MAILER` (`smtp`), `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SCHEME`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | yes | The client's SMTP provider. `log` and `array` never deliver. |
 | `QUEUE_CONNECTION` | yes | `database` (default in the template). Not `sync`. |
 | `SESSION_DRIVER`, `CACHE_STORE` | yes | `database` in the template. `SESSION_SECURE_COOKIE=true`. |
@@ -184,6 +184,14 @@ invalidates anything encrypted with it.
 
 After any change to `.env` on a server that caches config:
 `php artisan config:cache` (and `supervisorctl restart inspaya-worker:*`).
+
+### Neon (PostgreSQL) notes
+
+When running against Neon serverless PostgreSQL in production:
+
+1. **Endpoint**: Always use the **direct (non-pooler)** host (e.g. `ep-xyz.us-east-2.aws.neon.tech`), **not** the pooled host (`ep-xyz-pooler.us-east-2.aws.neon.tech`). Transaction poolers (PgBouncer) interfere with session variables, advisory locks, prepared statement caching, and database migrations/row locking (`FOR UPDATE`).
+2. **SSL Mode**: Neon requires encrypted connections. Set `DB_SSLMODE=require` in `.env`.
+3. **Idle suspend & connection recovery**: Neon computes suspend automatically after an inactivity timeout (default 5 minutes). When compute is suspended, established TCP connections are dropped by the server (`server closed the connection unexpectedly`). On the next request or worker job, Neon automatically wakes compute up (typical latency 500ms to 2s cold start). The application's database connection runner detects the severed socket, re-establishes the connection, and transparently retries the query without bubbling an error to the user.
 
 ## 4. First deploy
 
@@ -338,7 +346,7 @@ launch. What must be backed up:
 
 | What | How | Frequency |
 |---|---|---|
-| Database | `mysqldump --single-transaction --routines --default-character-set=utf8mb4 inspaya \| gzip > inspaya-$(date +%F).sql.gz` | Daily, keep 14+ days |
+| Database | PostgreSQL: `pg_dump -h $DB_HOST -U $DB_USERNAME -d $DB_DATABASE \| gzip > inspaya-$(date +%F).sql.gz`<br>MySQL: `mysqldump --single-transaction --routines --default-character-set=utf8mb4 inspaya \| gzip > inspaya-$(date +%F).sql.gz` | Daily, keep 14+ days |
 | Uploads | `tar czf uploads-$(date +%F).tar.gz -C /var/www/inspaya/storage/app public` | Daily, or `rsync` to the backup host |
 | `.env` | Copy to a password manager or encrypted store. Holds `APP_KEY` and SMTP/database credentials. | When it changes |
 
@@ -351,17 +359,24 @@ Do this once before launch, then every quarter, on a **separate** database
 (never over production):
 
 ```bash
-# 1. Database
-mysql -e "CREATE DATABASE inspaya_restore CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-gunzip < inspaya-YYYY-MM-DD.sql.gz | mysql inspaya_restore
+# 1. Database (PostgreSQL / Neon)
+createdb -h $DB_HOST -U $DB_USERNAME inspaya_restore
+gunzip < inspaya-YYYY-MM-DD.sql.gz | psql -h $DB_HOST -U $DB_USERNAME -d inspaya_restore
 
-# 2. Check the data came back
-mysql inspaya_restore -e "SELECT COUNT(*) FROM users; SELECT COUNT(*) FROM pages; SELECT COUNT(*) FROM contact_submissions; SELECT MAX(created_at) FROM audit_logs;"
+# Or for MySQL:
+# mysql -e "CREATE DATABASE inspaya_restore CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+# gunzip < inspaya-YYYY-MM-DD.sql.gz | mysql inspaya_restore
+
+# 2. Check the data came back (PostgreSQL)
+psql -h $DB_HOST -U $DB_USERNAME -d inspaya_restore -c "SELECT COUNT(*) FROM users; SELECT COUNT(*) FROM pages; SELECT COUNT(*) FROM contact_submissions; SELECT MAX(created_at) FROM audit_logs;"
+
+# Or for MySQL:
+# mysql inspaya_restore -e "SELECT COUNT(*) FROM users; SELECT COUNT(*) FROM pages; SELECT COUNT(*) FROM contact_submissions; SELECT MAX(created_at) FROM audit_logs;"
 
 # 3. Uploads: unpack to a scratch directory and compare the file count
 mkdir /tmp/uploads-check && tar xzf uploads-YYYY-MM-DD.tar.gz -C /tmp/uploads-check
 find /tmp/uploads-check/public -type f | wc -l
-mysql inspaya_restore -e "SELECT COUNT(*) FROM media"     # roughly equal
+psql -h $DB_HOST -U $DB_USERNAME -d inspaya_restore -c "SELECT COUNT(*) FROM media;"     # roughly equal
 
 # 4. Optional: boot a copy of the app against it
 DB_DATABASE=inspaya_restore php artisan about
@@ -413,7 +428,7 @@ two releases, and for one that cannot be avoided use
    migration itself was wrong, `php artisan migrate:rollback --step=1 --force`
    runs its `down()`, which drops what it created (data in that table or
    column is lost); otherwise restore the pre-deploy database backup. Take a
-   `mysqldump` immediately before any deploy that contains a migration.
+   database backup (`pg_dump` or `mysqldump`) immediately before any deploy that contains a migration.
 4. Verify with the same smoke tests, and check `/admin/health`.
 
 ## 10. Monitoring
@@ -428,7 +443,7 @@ two releases, and for one that cannot be avoided use
 
 ### What an on-call person needs to diagnose a failure
 
-1. `https://<domain>/up`. 503 means the database; check MySQL is running.
+1. `https://<domain>/up`. 503 means the database; check PostgreSQL (Neon) or MySQL is running and reachable.
 2. `tail -n 100 storage/logs/laravel-$(date +%F).log` for the exception.
 3. `sudo supervisorctl status` and `storage/logs/worker.log` for the worker.
 4. `/admin/health` or `php artisan queue:failed` for jobs; `php artisan schedule:list` for the schedule.
