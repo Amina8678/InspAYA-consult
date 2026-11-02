@@ -211,3 +211,30 @@ jobs:
 
       - name: Run test suite (PostgreSQL)
         run: composer test -- --fail-on-skipped
+
+  # Builds the Render image (never pushed) and proves nginx + php-fpm come up
+  # and answer /up over plain HTTP, as Render's health check does.
+  docker-image:
+    name: Docker image (Render)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t inspaya:ci .
+
+      - name: Smoke test the web role
+        run: |
+          docker run -d --name web -p 10000:10000 \
+            -e APP_ENV=production -e APP_DEBUG=false -e APP_KEY="$APP_KEY" \
+            -e DB_CONNECTION=sqlite -e DB_DATABASE=/tmp/ci.sqlite \
+            -e SESSION_DRIVER=array -e CACHE_STORE=array -e LOG_CHANNEL=stderr \
+            inspaya:ci
+          for i in $(seq 1 30); do
+            curl -fs http://127.0.0.1:10000/up && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:10000/up | grep '"status":"ok"'
+          # Anything but /up is redirected to HTTPS in production.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:10000/)" = 301
+          docker logs web
