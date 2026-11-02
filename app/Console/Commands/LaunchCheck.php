@@ -6,10 +6,13 @@ use App\Models\CoreValue;
 use App\Models\Page;
 use App\Models\Service;
 use App\Models\SiteSetting;
+use App\Support\DatabaseTls;
 use App\Support\Search;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * The last step before pointing a domain at the app: fails (exit 1, with a
@@ -47,11 +50,17 @@ class LaunchCheck extends Command
         $this->checkProxies();
         $dbExtensionOk = $this->checkDatabase();
 
-        if (! $dbExtensionOk || ! Schema::hasTable('site_settings')) {
-            if ($dbExtensionOk) {
-                $this->failures[] = 'The database has not been migrated (no site_settings table).';
+        $migrated = false;
+        if ($dbExtensionOk) {
+            try {
+                $migrated = Schema::hasTable('site_settings');
+                $migrated || $this->failures[] = 'The database has not been migrated (no site_settings table).';
+            } catch (Throwable $e) {
+                $this->failures[] = 'Cannot connect to the database: '.Str::limit($e->getMessage(), 160);
             }
-        } else {
+        }
+
+        if ($migrated) {
             $this->checkSettings();
             $this->checkLegalPages();
             $this->checkPublicContent();
@@ -130,6 +139,11 @@ class LaunchCheck extends Command
             $this->failures[] = "The PHP extension \"{$extension}\" required for database connection \"{$connection}\" is not loaded.";
 
             return false;
+        }
+
+        $problem = DatabaseTls::problem((array) config("database.connections.{$connection}"));
+        if ($problem !== null) {
+            $this->failures[] = $problem;
         }
 
         return true;

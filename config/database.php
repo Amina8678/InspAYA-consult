@@ -97,6 +97,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Only needed with sslmode=verify-ca/verify-full: path to the CA
+            // bundle (Debian: /etc/ssl/certs/ca-certificates.crt) or "system".
+            'sslrootcert' => env('DB_SSLROOTCERT'),
         ],
 
         'sqlsrv' => [

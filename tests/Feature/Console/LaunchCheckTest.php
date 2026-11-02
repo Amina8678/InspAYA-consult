@@ -54,6 +54,24 @@ class LaunchCheckTest extends TestCase
             ->assertExitCode(1);
     }
 
+    public function test_a_remote_postgres_connection_without_tls_fails(): void
+    {
+        $original = config('database.default');
+        config([
+            'database.connections.tlscheck' => ['driver' => 'pgsql', 'host' => 'ep-x.neon.tech', 'database' => 'x', 'sslmode' => 'prefer'],
+            'database.default' => 'tlscheck',
+        ]);
+
+        try {
+            // The config is inspected before any connection is tried; the fake
+            // host is unreachable, which the command reports instead of crashing.
+            $this->artisan('launch:check')->expectsOutputToContain('DB_SSLMODE')->assertExitCode(1);
+        } finally {
+            config(['database.default' => $original]);
+            DB::purge('tlscheck');
+        }
+    }
+
     public function test_a_launchable_site_passes(): void
     {
         $this->artisan('launch:check')->expectsOutputToContain('Launch check passed.')->assertSuccessful();
