@@ -4,6 +4,7 @@ namespace Tests;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\ParallelTesting;
 use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
@@ -18,6 +19,14 @@ abstract class TestCase extends BaseTestCase
         $app = parent::createApplication();
 
         static::guardAgainstNonTestingDatabase($app['config']);
+
+        // Storage::fake() wipes and reuses storage/framework/testing/disks/<disk>.
+        // Suffix it with the database engine (or TEST_TOKEN when set) so
+        // suites run side by side for different engines never share, and
+        // so never delete, each other's fake files.
+        ParallelTesting::resolveTokenUsing(
+            fn () => $_SERVER['TEST_TOKEN'] ?? $app['config']->get('database.default'),
+        );
 
         return $app;
     }
