@@ -17,6 +17,12 @@ class DatabaseTls
     /** PostgreSQL sslmode values under which libpq refuses a plaintext connection. */
     private const PGSQL_ENCRYPTED_MODES = ['require', 'verify-ca', 'verify-full'];
 
+    /**
+     * Value of Pdo\Mysql::ATTR_SSL_CA (PDO::MYSQL_ATTR_SSL_CA is deprecated
+     * since PHP 8.5). A literal, so this works without pdo_mysql loaded.
+     */
+    private const MYSQL_ATTR_SSL_CA = 1009;
+
     /** @param array<string, mixed> $config a config/database.php connection entry */
     public static function problem(array $config): ?string
     {
@@ -37,7 +43,7 @@ class DatabaseTls
                 : 'DB_SSLMODE is "'.$mode.'", which can fall back to an unencrypted database connection. Set it to require (or verify-full).';
         }
 
-        return blank($config['options'][\PDO::MYSQL_ATTR_SSL_CA] ?? $config['options'][1009] ?? null)
+        return blank($config['options'][self::MYSQL_ATTR_SSL_CA] ?? null)
             ? 'The MySQL connection has no TLS settings (MYSQL_ATTR_SSL_CA). Encrypt the connection to a remote database.'
             : null;
     }
